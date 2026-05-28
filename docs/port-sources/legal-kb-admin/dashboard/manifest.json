@@ -1,0 +1,13 @@
+{
+  "name": "legal-kb-admin",
+  "label": "法規 KB 管理",
+  "description": "MOJ KB 待確認 scan 與執行歷史（人工確認後才 apply）",
+  "icon": "Settings",
+  "version": "0.1.0",
+  "tab": {
+    "path": "/legal-kb-admin",
+    "position": "after:legal-kb"
+  },
+  "entry": "dist/index-0.1.0.js",
+  "api": "plugin_api.py"
+}

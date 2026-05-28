@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker 打包指南 — 法務特化 Hermes Agent（巢狀版面）</title>
+<style>
+  :root{--bg:#0f1320;--panel:#161b2e;--panel2:#1d2336;--ink:#e7eaf3;--muted:#9aa3bd;
+    --line:#2a3150;--accent:#7c6cff;--accent2:#37c6a8;--code-bg:#0b0e18;--warn:#d9a441;--chip:#272f4d;--red:#e2706a;}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.75;font-size:16px;
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;}
+  code,pre,.mono{font-family:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;}
+  header.hero{padding:46px 24px 34px;border-bottom:1px solid var(--line);background:
+    radial-gradient(1100px 380px at 18% -10%,rgba(124,108,255,.25),transparent 60%),
+    radial-gradient(900px 360px at 92% 0%,rgba(55,198,168,.16),transparent 55%),var(--panel);}
+  header.hero .wrap{max-width:1080px;margin:0 auto}
+  header.hero h1{margin:0 0 8px;font-size:27px}
+  header.hero .sub{color:var(--muted);margin:0;font-size:15px}
+  header.hero .meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+  .pill{background:var(--chip);border:1px solid var(--line);color:var(--muted);padding:4px 11px;border-radius:999px;font-size:12.5px}
+  .pill b{color:var(--ink)}
+  .layout{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:230px 1fr;gap:26px;padding:26px 24px 80px}
+  nav.toc{position:sticky;top:18px;align-self:start;max-height:calc(100vh - 36px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px}
+  nav.toc h4{margin:4px 6px 10px;font-size:12px;letter-spacing:1.5px;color:var(--muted)}
+  nav.toc a{display:block;color:var(--muted);text-decoration:none;font-size:13.5px;padding:6px 10px;border-radius:8px}
+  nav.toc a:hover{background:var(--panel2);color:var(--ink)}
+  nav.toc a .n{display:inline-block;width:18px;color:var(--accent);font-weight:700}
+  main{min-width:0}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px 26px;margin-bottom:20px}
+  section h2{margin:0 0 6px;font-size:21px;display:flex;align-items:center;gap:10px}
+  section h2 .num{background:linear-gradient(135deg,var(--accent),#5b54d6);color:#fff;font-size:13px;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  h3{font-size:16px;margin:20px 0 8px;color:#cdd3ea}
+  .lead{color:var(--muted);margin:4px 0 14px}
+  p{margin:10px 0}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow:auto;font-size:12.8px;line-height:1.6;margin:12px 0}
+  pre .c{color:#6f7aa6}pre .h{color:var(--accent2)}pre .k{color:#e0c878}pre .r{color:var(--red)}
+  code.inl{background:var(--panel2);border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-size:13px;color:#e9d9a6}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;background:var(--panel2)}
+  tr:last-child td{border-bottom:none}td code{color:#e9d9a6}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700;white-space:nowrap}
+  .b-in{background:rgba(45,138,62,.18);color:#5fd07a;border:1px solid rgba(45,138,62,.5)}
+  .b-out{background:rgba(181,86,47,.16);color:#e2966f;border:1px solid rgba(181,86,47,.5)}
+  .b-core{background:rgba(124,108,255,.16);color:#b3a8ff;border:1px solid rgba(124,108,255,.5)}
+  .callout{border-radius:12px;padding:14px 16px;margin:14px 0;border:1px solid;background:var(--panel2)}
+  .callout.note{border-color:rgba(124,108,255,.4)}
+  .callout.warn{border-color:rgba(217,164,65,.45);background:rgba(217,164,65,.07)}
+  .callout.dang{border-color:rgba(226,112,106,.5);background:rgba(226,112,106,.08)}
+  .callout .tag{font-weight:700;font-size:12.5px;display:block;margin-bottom:4px}
+  .callout.note .tag{color:var(--accent)}.callout.warn .tag{color:var(--warn)}.callout.dang .tag{color:var(--red)}
+  .grid{display:grid;gap:14px}@media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h4{margin:0 0 8px;font-size:15px;color:#dfe4f5;display:flex;gap:8px;align-items:center}
+  .card .lbl{font-size:12px;font-weight:800;padding:2px 9px;border-radius:7px}
+  .lbl.a{background:rgba(45,138,62,.2);color:#5fd07a}.lbl.b{background:rgba(124,108,255,.2);color:#b3a8ff}
+  .lbl.c{background:rgba(217,164,65,.18);color:#e4c069}.lbl.d{background:rgba(110,120,170,.18);color:#aab3d8}
+  .card ul{margin:6px 0 0;padding-left:18px}.card li{margin:4px 0;font-size:13.5px}
+  .verdict{font-size:13px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+  .verdict.in{color:#5fd07a}.verdict.out{color:#e2966f}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
+  .flow .step{background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:7px 12px;font-size:12.5px;font-family:monospace;color:#cdb3ff}
+  .flow .arr{color:var(--accent2);font-weight:700}
+  .flow .base{border-color:#5fd07a;color:#9fe6b3}
+  ul.clean{list-style:none;padding-left:0}
+  ul.clean li{padding:7px 0 7px 24px;position:relative;border-bottom:1px solid var(--line)}
+  ul.clean li:last-child{border-bottom:none}ul.clean li::before{content:"▸";position:absolute;left:4px;color:var(--accent)}
+  footer{max-width:1080px;margin:0 auto;padding:0 24px 60px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <h1>Docker 打包指南 — 法務特化 Hermes Agent</h1>
+    <p class="sub">對齊修正後版面：<b style="color:#b3a8ff">HERMES_HOME=~/.hermes、hermes-agent 巢狀其下</b>。兩段式：① 鎖版本的 hermes base → ② 疊上「A. 我的調校」。</p>
+    <div class="meta">
+      <span class="pill">版面：<b>巢狀 ~/.hermes/hermes-agent</b></span>
+      <span class="pill">鎖版本：<b>CalVer git tag</b></span>
+      <span class="pill">A：<b>烤進 image</b></span>
+      <span class="pill">C／D：<b>不打包</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc">
+    <h4>目錄</h4>
+    <a href="#model"><span class="n">1</span>打包模型 A/B/C/D</a>
+    <a href="#layout"><span class="n">2</span>巢狀版面 + base／A 兩段式</a>
+    <a href="#pin"><span class="n">3</span>版本鎖定：別用 0.14.0</a>
+    <a href="#dockerfile"><span class="n">4</span>Dockerfile 逐段</a>
+    <a href="#ignore"><span class="n">5</span>.dockerignore 安全</a>
+    <a href="#run"><span class="n">6</span>Build &amp; Run</a>
+    <a href="#expose"><span class="n">7</span>對外暴露</a>
+    <a href="#traps"><span class="n">8</span>陷阱表</a>
+  </nav>
+
+  <main>
+
+    <section id="model">
+      <h2><span class="num">1</span>打包模型 A / B / C / D</h2>
+      <p class="lead">repo 只存「調校的差異」(A)；core (B)、機密 (C)、狀態 (D) 各自處理。</p>
+      <div class="grid two">
+        <div class="card">
+          <h4><span class="lbl a">A</span>你的調校 · 烤進 image</h4>
+          <ul>
+            <li><code class="inl">.hermes-overlay/</code>（SOUL / config / 3 plugin / fsc-penalty skill / memories）</li>
+            <li><code class="inl">patches/hermes-agent/</code>（legal_kb、verify_citation、pipeline、moj 下載 + tests）</li>
+            <li><code class="inl">wiki/legal/knowledge_base/</code>（62 部法規 KB，2.3MB）</li>
+          </ul>
+          <div class="verdict in">✓ <span class="badge b-in">COPY 進來 + sync_overlays.sh import</span></div>
+        </div>
+        <div class="card">
+          <h4><span class="lbl b">B</span>上游 core · clone 鎖版本</h4>
+          <ul>
+            <li>NousResearch/hermes-agent，巢狀在 <code class="inl">$HERMES_HOME/hermes-agent</code></li>
+            <li>venv + 195 packages + 74 bundled skills</li>
+          </ul>
+          <div class="verdict in">✓ <span class="badge b-core">git clone + checkout CalVer tag</span></div>
+        </div>
+        <div class="card">
+          <h4><span class="lbl c">C</span>Secrets · 不打包</h4>
+          <ul>
+            <li><code class="inl">~/.hermes/.env</code>（LLM 憑證）、<code class="inl">~/.hermes/auth.json</code></li>
+          </ul>
+          <div class="verdict out">✗ <span class="badge b-out">runtime 注入（-e / -v）</span></div>
+        </div>
+        <div class="card">
+          <h4><span class="lbl d">D</span>Runtime 狀態 · 不打包</h4>
+          <ul>
+            <li><code class="inl">~/.hermes/{sessions,logs,state.db,legal_kb_scans}</code>、<code class="inl">wiki/legal/sources</code>(MOJ raw)</li>
+          </ul>
+          <div class="verdict out">✗ <span class="badge b-out">volume 或 ephemeral</span></div>
+        </div>
+      </div>
+      <div class="callout note">
+        <span class="tag">C 不打包 ≠ 不能填</span>
+        image 仍保留 runtime 注入口：使用者 <code class="inl">-e OPENAI_API_KEY=...</code> 或 <code class="inl">-v ...:/root/.hermes/.env</code> 帶自己的憑證。
+      </div>
+    </section>
+
+    <section id="layout">
+      <h2><span class="num">2</span>巢狀版面 + base／A 兩段式</h2>
+      <p class="lead">image 內忠實重現修正後的真實版面：HERMES_HOME 在家目錄，source 巢狀其下。</p>
+<pre>/root/.hermes/                 <span class="c"># = HERMES_HOME（容器內 ~ 即 /root）</span>
+├── hermes-agent/              <span class="c"># B：巢狀的 core（鎖版本 clone + setup）</span>
+│   └── venv/                  <span class="c"># 195 packages</span>
+├── plugins/ skills/ memories/ <span class="c"># A：sync_overlays import 還原進來</span>
+├── SOUL.md  config.yaml
+└── .env                       <span class="c"># C：runtime 掛載，不在 image 內</span>
+
+/opt/hinagiku/                 <span class="c"># A：repo 鏡像（COPY 進來）</span>
+└── wiki/legal/knowledge_base/ <span class="c"># KB；HERMES_LEGAL_KB_DIR 指這裡</span></pre>
+      <div class="flow">
+        <span class="step base">① clone hermes @CalVer tag</span><span class="arr">→</span>
+        <span class="step base">setup-hermes.sh（venv+deps）</span>
+        <span class="arr">══ base 完成 ══</span>
+        <span class="step">② COPY repo (A)</span><span class="arr">→</span>
+        <span class="step">sync_overlays.sh import</span><span class="arr">→</span>
+        <span class="step">py_compile 健檢</span>
+      </div>
+      <p><strong>① base</strong>＝乾淨、鎖死版本的 hermes（可單獨做成 <code class="inl">hermes-base:&lt;tag&gt;</code> 重用）；<strong>② 疊 A</strong>＝把你的調校 import 上去。<code class="inl">sync_overlays.sh import</code> 此時把 overlay 寫進 <code class="inl">/root/.hermes</code>、patches 寫進 <code class="inl">/root/.hermes/hermes-agent</code>（腳本已改吃 <code class="inl">HERMES_HOME</code>）。</p>
+    </section>
+
+    <section id="pin">
+      <h2><span class="num">3</span>版本鎖定：別用「0.14.0」鎖</h2>
+      <div class="callout warn">
+        <span class="tag">0.14.0 不是唯一的 git ref</span>
+        <code class="inl">0.14.0</code> 是 <code class="inl">pyproject.toml</code> 的 <strong>package version</strong>，它<strong>橫跨多個 release</strong>、不唯一;上游真正的 release 是 <strong>CalVer git tag</strong>（如 <code class="inl">v2026.5.16</code>、<code class="inl">v2026.5.7</code>…）。所以：
+        <ul class="clean" style="margin-top:8px">
+          <li>要可重現 → <code class="inl">--build-arg HERMES_AGENT_REF=&lt;SHA 或 tag&gt;</code>；建議用<strong>完整 commit SHA</strong>（唯一、不受 tag 有無影響）。</li>
+          <li><strong>版本敏感度</strong>：<code class="inl">patches/diffs/</code>（改上游既有檔的 patch）的 <code class="inl">git apply</code> 才會挑版本——ref 與 export 當下不符就會在 ② 失敗。<strong>本專案目前 <code class="inl">diffs/</code> 為空</strong>（擴充全是 <code class="inl">files/</code> 新增檔），這種硬失敗暫時不會發生;但新檔會呼叫上游 API,版本差太遠仍可能在 <strong>runtime</strong> 出錯,故仍建議釘在你開發/測試的版本。</li>
+          <li>image 內 <code class="inl">/root/.hermes/.hermes-agent-pinned-sha</code> 會記下實際 checkout 的 commit 供追溯。</li>
+        </ul>
+        <code class="inl">hermes-agent</code> 是 git editable 安裝（非 PyPI wheel），所以鎖 git tag/commit、不是 <code class="inl">pip install ==0.14.0</code>。
+      </div>
+      <h3>查你已安裝的 hermes-agent 版本（填進 <code class="inl">HERMES_AGENT_REF</code>）</h3>
+<pre><span class="c"># 精確 commit SHA（最保險，建議直接用這個）</span>
+git -C ~/.hermes/hermes-agent <span class="h">rev-parse HEAD</span>
+
+<span class="c"># 想要 CalVer tag：HEAD 正好落在 tag 上才有輸出（淺 clone 可能為空，需先 git fetch --tags）</span>
+git -C ~/.hermes/hermes-agent tag --points-at HEAD</pre>
+    </section>
+
+    <section id="dockerfile">
+      <h2><span class="num">4</span>Dockerfile 逐段</h2>
+      <p class="lead">完整檔在隨附的 <code class="inl">Dockerfile</code>；關鍵段落：</p>
+<pre>ARG HERMES_AGENT_REF=v2026.5.16            <span class="c"># B：鎖 CalVer tag（非 0.14.0）</span>
+ENV HERMES_HOME=/root/.hermes              <span class="c"># 巢狀版面的 HERMES_HOME</span>
+RUN apt-get install -y git ripgrep rsync &amp;&amp; pip install uv
+
+<span class="c"># ① base：鎖版本的 hermes，巢狀在 $HERMES_HOME/hermes-agent</span>
+RUN git clone "$HERMES_AGENT_REPO" "$HERMES_HOME/hermes-agent" \
+ &amp;&amp; git -C "$HERMES_HOME/hermes-agent" <span class="h">checkout "$HERMES_AGENT_REF"</span>
+RUN cd "$HERMES_HOME/hermes-agent" &amp;&amp; <span class="k">yes n |</span> env HERMES_HOME="$HERMES_HOME" bash setup-hermes.sh
+
+<span class="c"># ② 疊上 A：repo 鏡像 → sync import 到 $HERMES_HOME</span>
+<span class="h">COPY . /opt/hinagiku/</span>
+RUN cd /opt/hinagiku &amp;&amp; bash <span class="h">scripts/sync_overlays.sh import</span>
+ENV HERMES_LEGAL_KB_DIR=/opt/hinagiku/wiki/legal/knowledge_base   <span class="c"># KB 在 repo 內</span>
+
+EXPOSE 9119 8642
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["web"]</pre>
+      <p>base image 用 <code class="inl">nikolaik/python-nodejs:python3.11-nodejs20</code>（Python 3.11 對齊 setup 的 3.11.15；Node 20 給 web 前端）。</p>
+    </section>
+
+    <section id="ignore">
+      <h2><span class="num">5</span>.dockerignore 是安全關鍵</h2>
+      <div class="callout dang">
+        <span class="tag">別把本地 ~/.hermes 烤進 image</span>
+        Docker build context <strong>不看 <code class="inl">.gitignore</code></strong>。若你在「已跑起來」的環境 build,本地的 <code class="inl">hermes-agent/</code>（venv 數 GB）與 <code class="inl">.hermes/</code>（含 secrets、state.db）可能被 <code class="inl">COPY .</code> 烤進 image。隨附 <code class="inl">.dockerignore</code> 明確排除它們,強制走「clone 鎖版本 + sync import」重建：</p>
+<pre><span class="r">hermes-agent/</span>   <span class="r">.hermes/</span>        <span class="c"># 防止 C/D 外洩</span>
+wiki/legal/sources/   wiki/legal/logs/   <span class="c"># L1 raw / changelog，數 GB</span>
+.git/  .claude/  **/__pycache__/</pre>
+        （<code class="inl">wiki/legal/knowledge_base/</code> 不排除——那是 A，要烤進去。）
+      </div>
+    </section>
+
+    <section id="run">
+      <h2><span class="num">6</span>Build &amp; Run</h2>
+      <h3>① 檔案位置（docker/ + repo 根的 .dockerignore）</h3>
+      <p><code class="inl">docker/Dockerfile</code>、<code class="inl">docker/entrypoint.sh</code>、本指南都在 <code class="inl">docker/</code>；<code class="inl">.dockerignore</code> 則必須在 <code class="inl">hinagiku/</code> 根——Docker 只認 build context 根的 <code class="inl">.dockerignore</code>。build 一律<strong>從 repo 根</strong>執行（context = repo 根）。</p>
+      <h3>② Build（鎖 CalVer tag）</h3>
+<pre>docker build <span class="h">-f docker/Dockerfile</span> --build-arg HERMES_AGENT_REF=<span class="k">v2026.5.16</span> -t hermes-legal:latest .</pre>
+      <h3>③ Run（C：secrets runtime 注入）</h3>
+<pre><span class="c"># 管理後台 + 法規 plugins（9119）</span>
+docker run --rm -p 9119:9119 \
+  -v $PWD/secrets/hermes.env:<span class="h">/root/.hermes/.env</span>:ro \
+  hermes-legal:latest
+
+<span class="c"># 或 chat gateway（8642）</span>
+docker run --rm -p 8642:8642 -e OPENAI_API_KEY=$OPENAI_API_KEY hermes-legal:latest run
+
+<span class="c"># 或互動 CLI</span>
+docker run --rm -it -v $PWD/secrets/hermes.env:/root/.hermes/.env:ro hermes-legal:latest cli</pre>
+      <h3>④（選用）持久化 runtime 狀態 D</h3>
+<pre>docker run -p 9119:9119 -v $PWD/secrets/hermes.env:/root/.hermes/.env:ro \
+  -v hermes_sessions:<span class="h">/root/.hermes/sessions</span> \
+  -v hermes_logs:/root/.hermes/logs \
+  hermes-legal:latest</pre>
+    </section>
+
+    <section id="expose">
+      <h2><span class="num">7</span>對外暴露（loopback 的坑）</h2>
+      <div class="callout warn">
+        <span class="tag">預設 bind 127.0.0.1</span>
+        <code class="inl">hermes web</code>(9119) 與 gateway(8642) 預設綁 <code class="inl">127.0.0.1</code>、CORS 只放行 localhost。同機 <code class="inl">-p 9119:9119</code> 開 <code class="inl">http://localhost:9119</code> 通常 OK;要從別台/區網連,容器內服務綁 loopback、<code class="inl">-p</code> 透不出去,需讓 hermes bind <code class="inl">0.0.0.0</code>（依版本設定）或在前面架 reverse proxy。詳見你 repo 的 <code class="inl">docs/custom-frontend-architecture.md</code>。
+      </div>
+    </section>
+
+    <section id="traps">
+      <h2><span class="num">8</span>陷阱表</h2>
+      <table>
+        <thead><tr><th>項目</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>鎖 CalVer tag，非 0.14.0</strong></td><td><code>0.14.0</code> 是 package version、不唯一;鎖 <code>v2026.x.y</code> tag 或 commit,且要＝你 export 當下版本,否則 <code>git apply</code> 在 ② 炸。</td></tr>
+          <tr><td><strong>KB 路徑</strong></td><td>新版面 HERMES_HOME=~/.hermes,legal_kb fallback 會指到 <code>~/wiki</code>(錯);image 已 <code>ENV HERMES_LEGAL_KB_DIR=/opt/hinagiku/wiki/legal/knowledge_base</code> 修正。</td></tr>
+          <tr><td><strong>secrets 永不入 image</strong></td><td><code>.dockerignore</code> 擋 <code>.hermes/</code> + runtime <code>-e</code>/<code>-v</code> 注入到 <code>/root/.hermes/.env</code>。</td></tr>
+          <tr><td><strong>base/A 可拆兩 image</strong></td><td>想重用 base：先 build <code>hermes-base:v2026.5.16</code>（只到 ①）,再 <code>FROM hermes-base</code> 疊 ②。本檔為單階段,合併兩步。</td></tr>
+          <tr><td><strong>授權</strong></td><td>image 內含 NousResearch/hermes-agent 程式,散佈前確認其 license。</td></tr>
+          <tr><td><strong>體積</strong></td><td>venv(195 pkgs)+Node 基底偏大;可 multi-stage 瘦身。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+<footer>
+  本指南對齊 2026-05 版面修正（HERMES_HOME=~/.hermes、hermes-agent 巢狀其下、repo 只做鏡像）。檔案：<code>docker/Dockerfile</code>、<code>docker/entrypoint.sh</code>、本檔，與 repo 根的 <code>.dockerignore</code>。版本鎖定請用 CalVer git tag 或 commit。
+</footer>
+</body>
+</html>

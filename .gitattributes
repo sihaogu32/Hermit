@@ -1,0 +1,6 @@
+# 在 Windows 上開發、在 Linux 容器內執行：shell 腳本必須維持 LF，
+# 否則 docker build 的 `bash sync_overlays.sh import` 與 entrypoint 會因 \r 失敗。
+* text=auto eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
+entrypoint.sh text eol=lf

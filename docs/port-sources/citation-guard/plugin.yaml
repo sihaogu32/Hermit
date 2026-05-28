@@ -1,0 +1,8 @@
+name: citation-guard
+version: 0.1.0
+description: "事中 / 事後 enforcement 設計紅線#2：監聽 verify_citation 工具結果並比對 final response 中的法條引用，未驗證引用 mutate + log。"
+author: "hermes_law"
+hooks:
+  - transform_tool_result
+  - transform_llm_output
+  - on_session_end

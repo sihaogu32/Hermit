@@ -1,0 +1,15 @@
+# ── 排除本地 core 與 runtime ──────────────────────────────────────────────
+# 真實 runtime 在 HERMES_HOME（容器內 /root/.hermes，含巢狀 hermes-agent）、本不在 repo 內。
+# 下面兩條是防呆——萬一有人誤在 repo 內建出真實 runtime 目錄，仍擋掉。
+/hermes-agent/
+/.hermes/
+/.pytest_cache/
+/.claude/
+
+# Python bytecode 快取（無 leading slash → 全域擋，含 .hermes-overlay/ 底下）
+__pycache__/
+*.pyc
+*.pyo
+
+# 個人資料 connector 的本地快取 / runtime 狀態（P1 起；不入 git）
+# /wiki/personal/cache/

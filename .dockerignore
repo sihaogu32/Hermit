@@ -1,0 +1,23 @@
+# ── 關鍵安全/正確性：排除本地 core 與 runtime ───────────────────────────
+# Docker build context 不看 .gitignore。若你在「已 import 過」的工作目錄 build，
+# 本機可能存在 hermes-agent/（venv 數 GB）與 .hermes/（secrets、state.db、sessions）。
+# 真實 runtime 在 ~/.hermes、本不在 repo 內，但仍防呆排除，
+# 確保 image 一律走「clone 鎖版本 + sync_overlays.sh import」重建（不打包 C/D）。
+hermes-agent/
+.hermes/
+
+# 版控與雜項
+.git/
+.gitignore
+.claude/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# 打包產物本身（在 docker/ 與 repo 根；不需進 image）。
+# ⚠ 不要排除 docker/entrypoint.sh——Dockerfile 用 COPY docker/entrypoint.sh，排除會讓 build 失敗。
+docker/Dockerfile
+docker/docker-packaging-guide.html
+.dockerignore
