@@ -30,7 +30,7 @@
 | 重寫 docs（seed-spec 畢業 / install-runtime Docker 化 / roadmap） | 已實作 |
 | Docker 化（Dockerfile / entrypoint 去法務） | 已實作 |
 | manifest / ignore 清法務、改 glob 槽 | 已實作 |
-| `git init` + 初次 commit | 進行中 |
+| `git init` + 初次 commit | 已實作（commit c83b651，working tree clean） |
 | Docker build / run 端到端驗證 | 待跑（需 Docker Desktop + 網路） |
 
 ## 開放決策（承接 seed-spec §10）

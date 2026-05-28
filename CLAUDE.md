@@ -34,7 +34,7 @@
 
 - **先動手再迭代** — 面對陌生框架先裝起來跑過、產生具體 pain point 再談架構選型
 - **小而可驗證** — 避免一次性大改；每個單元都要有對應測試或人工驗證步驟
-- **Migration 而非重寫** — 移植 hermes_law 已驗證的「模式」（見 [`docs/port-sources/`](docs/port-sources/)），不直接沿用法務程式碼
+- **Migration 而非重寫** — 移植 hermes_law 已驗證的「模式」（見 [`docs/port-sources/README.md`](docs/port-sources/README.md)），不直接沿用法務程式碼
 
 ## 目前進度
 

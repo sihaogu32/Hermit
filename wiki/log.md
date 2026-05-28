@@ -16,3 +16,7 @@
 - manifest / ignore：`.hermes-overlay/manifest.sh` 改 glob 槽（skills/* plugins/*）、`patches/hermes-agent/manifest.sh` 清空、`.gitignore` / `.dockerignore` 移除 legal 路徑
 - `git init` 成新 repo
 - 下一步 P1（critical path）：connector + 權限同意中心 plugin
+
+## [2026-05-28] update | 文件漂移修正（roadmap git-init 狀態 / port-sources 連結對齊）
+- `docs/roadmap.md`：P0 落地清單「`git init` + 初次 commit」狀態 `進行中` → `已實作（commit c83b651，working tree clean）`；P0 整體仍 `進行中`（Docker build/run 端到端驗證未跑）
+- `README.md` / `CLAUDE.md`：文件導引中 port-sources 連結由裸目錄 `docs/port-sources/` 對齊為 `docs/port-sources/README.md`（指向對映表）
