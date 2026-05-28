@@ -6,7 +6,8 @@
 # hermes-agent 巢狀在 $HERMES_HOME/hermes-agent（上游非 root 預設落點）。
 #
 # 兩段式：① base = 鎖定版本的 hermes；② 疊上「A. 我的調校」(repo 鏡像)。
-#   A（.hermes-overlay/ + patches/ + wiki/ + sync 腳本）→ COPY 進來、sync import
+#   A（.hermes-overlay/ + patches/ + sync 腳本）→ COPY 進來、sync import 疊回 runtime
+#     wiki/ → COPY 進 /opt/hermit/wiki 後 symlink 到 ~/wiki（llm-wiki skill 預設路徑；image 內備妥基底 wiki）
 #   B（上游 core + Python 環境）→ git clone 並鎖版本
 #   C（secrets）/ D（runtime 狀態）→ 不打包；C runtime 注入(-e/-v)、D 用 volume
 #
@@ -48,6 +49,13 @@ RUN cd "${HERMES_HOME}/hermes-agent" \
 COPY . /opt/hermit/
 # 從 repo 鏡像還原到 $HERMES_HOME：overlay→~/.hermes、patches/files→hermes-agent、diffs→git apply
 RUN cd /opt/hermit && bash scripts/sync_overlays.sh import
+
+# ── wiki：llm-wiki skill 的知識庫 ────────────────────────────────────────────
+# wiki/ 不走 overlay manifest（直接 git-tracked 在 repo 頂層）：上面的 COPY 已帶進 /opt/hermit/wiki。
+# 這裡 symlink 到 llm-wiki skill（research/llm-wiki）預設讀取路徑 ~/wiki（容器內 HOME=/root）。
+# → image 內即備妥一份打好基底的 wiki（SCHEMA/index/log + raw/entities/concepts/comparisons/queries），
+#   啟動後可直接被 skill 讀寫，不需另行擴充。
+RUN ln -sfn /opt/hermit/wiki /root/wiki
 
 # ── build 時健檢（中性 smoke：確認 base 裝好、overlay import 成功）────────────
 RUN cd "${HERMES_HOME}/hermes-agent" \

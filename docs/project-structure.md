@@ -1,21 +1,8 @@
----
-title: Current Project Structure
-created: 2026-05-28
-updated: 2026-05-28
-type: summary
-tags: [hermes, personal-agent, architecture, codebase, tooling]
-sources:
-  - file:///C:/jeffrey/hermit/
-  - file://~/.hermes/hermes-agent/AGENTS.md
-  - file:///C:/jeffrey/hermit/wiki/SCHEMA.md
-confidence: high
----
-
 # Current Project Structure
 
 本頁定義 `hermit` 目前專案的完整結構視圖，以及後續擴充時必須遵循的結構原則。
 
-相關頁面：[[SCHEMA]]
+相關頁面：[wiki/SCHEMA.md](../wiki/SCHEMA.md)（wiki 規則、page types、frontmatter、tag taxonomy）
 
 ## Structural Principles
 
@@ -63,17 +50,19 @@ hermit/
 
 ## Wiki Structure
 
+`wiki/` 是 llm-wiki skill（`research/llm-wiki`）維護的知識庫；image build 時 symlink 到 skill 預設路徑 `~/wiki`（見 [`install-runtime.md`](install-runtime.md) 的 wiki 接線）。三層：raw（不可變來源）→ entities/concepts/comparisons/queries（agent 維護的頁）→ SCHEMA（規則）。本頁（project-structure）屬專案結構說明，放在 `docs/`，不在 wiki 知識層內。
+
 ```text
 wiki/
-├── SCHEMA.md              # wiki rules, page types, frontmatter, tags, update policy
-├── index.md               # catalog of wiki pages
+├── SCHEMA.md              # Layer 3: wiki rules, page types, frontmatter, tags, update policy
+├── index.md               # 分型目錄（catalog of Layer 2 pages）
 ├── log.md                 # append-only wiki action log
-├── project-structure.md   # this page
-├── entities/              # notable systems, connectors, tools, services, data sources
-├── concepts/              # architecture concepts and workflows
-├── comparisons/           # side-by-side analyses
-├── queries/               # substantial answers / research results
-└── raw/                   # immutable source ingests
+├── entities/              # Layer 2: notable systems, connectors, tools, services, data sources
+├── concepts/              # Layer 2: architecture concepts and workflows
+├── comparisons/           # Layer 2: side-by-side analyses
+├── queries/               # Layer 2: substantial answers / research results
+└── raw/                   # Layer 1: immutable source ingests
+    └── articles/  papers/  transcripts/  assets/
 ```
 
 ## Extension Slots
@@ -89,7 +78,7 @@ wiki/
    ~/.hermes/plugins/<connector-or-consent>/dashboard/{manifest.json,plugin_api.py,dist/index.js}
    ~/.hermes/plugins/<name>/tests/test_<slug>_api.py   # 檔名帶 <slug> 識別性，避免合併 pytest 時 basename 撞名
    讀取工具（若需）→ ~/.hermes/hermes-agent/tools/<feature>.py（鏡像到 patches/hermes-agent/files/）
-   寫入 / 對外動作走「人工確認入口」（移植 docs/port-sources/legal-kb-admin 的 human-confirm）
+   寫入 / 對外動作走「人工確認入口」（移植 port-sources/legal-kb-admin 的 human-confirm）
    .hermes-overlay/manifest.sh 的 plugins/* glob 已涵蓋；新 tool 要加進 patches/hermes-agent/manifest.sh
 
 3. 新 deterministic tool
@@ -102,7 +91,7 @@ wiki/
    include trigger conditions, exact commands, pitfalls, and verification
    .hermes-overlay/manifest.sh 的 skills/* glob 已涵蓋
 
-5. 來源透明 guard（移植 docs/port-sources/citation-guard）— P2
+5. 來源透明 guard（移植 port-sources/citation-guard）— P2
    ~/.hermes/plugins/source-guard/ + ~/.hermes/hermes-agent/tools/<verify>.py
 ```
 

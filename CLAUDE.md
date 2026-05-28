@@ -27,7 +27,7 @@
    | runtime 狀態 | `~/.hermes/sessions/`、`~/.hermes/logs/`、`~/.hermes/state.db*` 等（不入 git、不入 overlay） |
    | 設計／安裝筆記 | `docs/`（seed-spec / install-runtime / roadmap / port-sources） |
 
-4. **加東西要同步寫 wiki** — 新檔在 `hermes-agent/` → 在 `wiki/` 留 page 解釋用途、儲存位置、執行／驗證方式；每次動作 append 到 `wiki/log.md`，新 page 加進 `wiki/index.md`。Extension Slots / Naming Rules 見 [`wiki/project-structure.md`](wiki/project-structure.md)
+4. **加東西要同步寫 wiki** — 新檔在 `hermes-agent/` → 在 `wiki/` 留 page 解釋用途、儲存位置、執行／驗證方式；每次動作 append 到 `wiki/log.md`，新 page 加進 `wiki/index.md`。Extension Slots / Naming Rules 見 [`docs/project-structure.md`](docs/project-structure.md)
 5. **擴充落地後跑 `scripts/sync_overlays.sh export` 並 commit** — 本地擴充靠 `.hermes-overlay/` 與 `patches/hermes-agent/` 兩個鏡像目錄備份；白名單分別在各自的 `manifest.sh`
 
 ## 工作風格
@@ -63,5 +63,5 @@ docker run --rm -it -e OPENAI_API_KEY=... hermit cli
 | Docker 安裝、執行、版本鎖、重建 SOP | [`docs/install-runtime.md`](docs/install-runtime.md) |
 | 分期進度（P0–P5） | [`docs/roadmap.md`](docs/roadmap.md) |
 | 移植來源參考（citation-guard / legal-kb-admin → hermit 改寫目標） | [`docs/port-sources/README.md`](docs/port-sources/README.md) |
-| 目錄責任邊界、Extension Slots、Naming Rules | [`wiki/project-structure.md`](wiki/project-structure.md) |
+| 目錄責任邊界、Extension Slots、Naming Rules | [`docs/project-structure.md`](docs/project-structure.md) |
 | Wiki 自身規則（frontmatter、page types、log policy） | [`wiki/SCHEMA.md`](wiki/SCHEMA.md) |

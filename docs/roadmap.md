@@ -26,7 +26,7 @@
 | 清法務資產（legal KB / legal-kb-browser / fsc-penalty-search / legal_kb 工具 / MOJ pipeline / legal wiki） | 已實作 |
 | 停放 port-sources（citation-guard / legal-kb-admin / verify_citation → `docs/port-sources/`） | 已實作 |
 | 重寫識別／設定層（README / CLAUDE / SOUL / config / memories / 鏡像 README） | 已實作 |
-| 重寫 wiki 知識層（SCHEMA / project-structure / index / log） | 已實作 |
+| 重寫 wiki 知識層（SCHEMA / index / log；project-structure 後移至 `docs/`） | 已實作 |
 | 重寫 docs（seed-spec 畢業 / install-runtime Docker 化 / roadmap） | 已實作 |
 | Docker 化（Dockerfile / entrypoint 去法務） | 已實作 |
 | manifest / ignore 清法務、改 glob 槽 | 已實作 |

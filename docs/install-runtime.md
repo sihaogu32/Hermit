@@ -16,6 +16,14 @@ hermit 的執行環境走 **Docker 容器**：HERMES_HOME 在容器內 `/root/.h
 
 兩者由 [`scripts/sync_overlays.sh`](../scripts/sync_overlays.sh) 雙向同步（`export` 推鏡像、`import` 還原）；`docker build` 期會自動跑 `import` 把鏡像疊回容器內 runtime。
 
+### wiki/（llm-wiki 知識層）— 例外：baked + symlink，不走 sync
+
+`wiki/` 直接 git-tracked 在 repo 頂層，**不在 overlay/patches manifest 內、不由 `sync_overlays.sh` 同步**。它由 `docker build` 的 `COPY . /opt/hermit/` 帶進 image，再 `ln -sfn /opt/hermit/wiki /root/wiki` symlink 到 llm-wiki skill（`research/llm-wiki`）預設讀取路徑 `~/wiki`（容器內 `HOME=/root`）。
+
+因此 **image 內就備妥一份打好基底的 wiki**（`SCHEMA.md`/`index.md`/`log.md` + `raw/`、`entities/`、`concepts/`、`comparisons/`、`queries/` 內容層），啟動 agent 後 skill 即可直接讀寫，不需另行擴充。
+
+> runtime 寫入會落在容器層（重建即消失、不回 git）。dev 時要讓 skill 的產出持久回 repo，把 host 的 `<repo>/wiki` bind-mount 到容器 `/opt/hermit/wiki`（`-v <repo>/wiki:/opt/hermit/wiki`）。
+
 ## Build
 
 從 repo 根執行（build context = repo 根、`-f` 指向 `docker/Dockerfile`）：
