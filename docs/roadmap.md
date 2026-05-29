@@ -12,7 +12,7 @@
 
 | Phase | 目標 | 關鍵交付 | 狀態 |
 |---|---|---|---|
-| **P0** | 專案落地 | 從 hermes_law 副本切出乾淨 hermit 骨架（清法務資產、停放 port-sources、重寫識別／設定／文件層、Docker 化、`git init`） | **進行中（2026-05-28）** |
+| **P0** | 專案落地 | 從 hermes_law 副本切出乾淨 hermit 骨架（清法務資產、停放 port-sources、重寫識別／設定／文件層、Docker 化、`git init`） | **已實作（2026-05-29，含 build/run 端到端驗證）** |
 | P1 | 資料與記憶治理（critical path） | **connector + 權限同意中心 plugin**（第一個資料源）、記憶可見／可編輯／可刪 | 未開工 |
 | P2 | 對話與任務 | 繁中對話核心、提醒／排程、**來源透明 guard 移植**（citation-guard → source guard） | 未開工 |
 | P3 | 整合與語音 | 第 2–3 個 connector、檔案／筆記摘要、語音輸入、草稿 | 未開工 |
@@ -31,7 +31,7 @@
 | Docker 化（Dockerfile / entrypoint 去法務） | 已實作 |
 | manifest / ignore 清法務、改 glob 槽 | 已實作 |
 | `git init` + 初次 commit | 已實作（commit c83b651，working tree clean） |
-| Docker build / run 端到端驗證 | 待跑（需 Docker Desktop + 網路） |
+| Docker build / run 端到端驗證 | 已實作（2026-05-29，rootless podman 5.6.2 跑通；build 15 步全過、smoke check `py_compile`+`hermes --help` 通過；run 驗證 entrypoint 透傳／`cli` 別名／overlay 還原／`hermes doctor` exit 0。建置方法未動 Dockerfile，僅以臨時 registries.conf 解 podman 短名）。**版本鎖已 bump 至 `v2026.5.29`（SHA `e71a2bd1` = package v0.15.1，距上游 HEAD 113 commits），image 2.47 GB** |
 
 ## 開放決策（承接 seed-spec §10）
 

@@ -22,8 +22,8 @@ hermit 的執行環境走 **Docker 容器**：HERMES_HOME 在容器內 `/root/.h
 
 ```powershell
 docker build -f docker/Dockerfile -t hermit .
-# 可指定上游版本（預設鎖 v2026.5.16）
-docker build -f docker/Dockerfile --build-arg HERMES_AGENT_REF=v2026.5.16 -t hermit .
+# 可指定上游版本（預設鎖 v2026.5.29）
+docker build -f docker/Dockerfile --build-arg HERMES_AGENT_REF=v2026.5.29 -t hermit .
 ```
 
 build 內部（細節見 [`docker/Dockerfile`](../docker/Dockerfile)）：
@@ -32,7 +32,7 @@ build 內部（細節見 [`docker/Dockerfile`](../docker/Dockerfile)）：
 3. `COPY . /opt/hermit/` → 跑 `sync_overlays.sh import` 把鏡像（overlay + patches）疊回 `/root/.hermes`
 4. 中性 smoke 健檢（py_compile + `hermes --help`）
 
-> **版本鎖**：用 git tag / commit 鎖上游（如 `v2026.5.16` = SHA `a91a57fa5`），不要用 pyproject 的 package version（`0.14.0` 橫跨多個 release、不唯一）。若 `patches/diffs/` 有改上游既有檔的 patch，`git apply` 才挑版本；目前 `diffs/` 為空，硬失敗風險低。
+> **版本鎖**：用 git tag / commit 鎖上游（如 `v2026.5.29` = SHA `e71a2bd1`），不要用 pyproject 的 package version（`0.14.0` 橫跨多個 release、不唯一）。若 `patches/diffs/` 有改上游既有檔的 patch，`git apply` 才挑版本；目前 `diffs/` 為空，硬失敗風險低。
 
 ## Run
 

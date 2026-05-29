@@ -11,19 +11,19 @@
 #   C（secrets）/ D（runtime 狀態）→ 不打包；C runtime 注入(-e/-v)、D 用 volume
 #
 # build（從 repo 根執行，context=repo 根；-f 指向 docker/Dockerfile）：
-#   docker build -f docker/Dockerfile --build-arg HERMES_AGENT_REF=v2026.5.16 -t hermit .
+#   docker build -f docker/Dockerfile --build-arg HERMES_AGENT_REF=v2026.5.29 -t hermit .
 ###############################################################################
 FROM nikolaik/python-nodejs:python3.11-nodejs20
 
 # ── B：鎖定上游版本 ──────────────────────────────────────────────────────
 # ⚠ 用 git tag/commit 鎖，不要用「0.14.0」：
 #   0.14.0 是 pyproject.toml 的 package version，橫跨多個 release、不唯一；
-#   上游 release 是 CalVer git tag（如 v2026.5.16）。要可重現就鎖完整 commit SHA
+#   上游 release 是 CalVer git tag（如 v2026.5.29）。要可重現就鎖完整 commit SHA
 #   或 CalVer tag，最好＝你 sync_overlays.sh export 當下的版本（patches/diffs 若有改
 #   上游既有檔的 patch，git apply 才挑版本；本專案目前 diffs/ 為空，硬失敗風險低）。
 #   查已安裝版本：git -C ~/.hermes/hermes-agent rev-parse HEAD
 ARG HERMES_AGENT_REPO=https://github.com/NousResearch/hermes-agent.git
-ARG HERMES_AGENT_REF=v2026.5.16
+ARG HERMES_AGENT_REF=v2026.5.29
 
 ENV HERMES_HOME=/root/.hermes \
     PATH="/root/.local/bin:${PATH}" \
