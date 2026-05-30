@@ -7,6 +7,7 @@ fallback_providers: []
 credential_pool_strategies: {}
 toolsets:
 - hermes-cli
+- google-calendar
 agent:
   max_turns: 90
   gateway_timeout: 1800
