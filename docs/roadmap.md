@@ -48,4 +48,4 @@
 
 - 每完成一項，把狀態改成 `已實作` / `已決`，補上落地位置與驗證方式
 - 不要在 roadmap 做決策——決策在 `seed-spec.md` 做完後再回頭更新本表
-- 任何欄位修改要在 [`../wiki/log.md`](../wiki/log.md) 留一筆紀錄
+- 任何欄位修改在 commit message 說明即可（`wiki/` 是 hermes 個人知識庫鏡像，不放 repo 開發紀錄）

@@ -18,11 +18,16 @@ HA_DIR="$HERMES_HOME/hermes-agent"
 PATCHES_DIR="$REPO_ROOT/patches/hermes-agent"
 PATCHES_FILES="$PATCHES_DIR/files"
 PATCHES_DIFFS="$PATCHES_DIR/diffs"
+# hermes /llm-wiki：runtime 在 config wiki.path（預設 ~/wiki，不在 HERMES_HOME 內），repo 整目錄鏡像。
+WIKI_DIR="${HERMES_WIKI_DIR:-$HOME/wiki}"
+WIKI_MIRROR="$REPO_ROOT/wiki"
 
 # shellcheck source=../.hermes-overlay/manifest.sh
 source "$HERMES_OVERLAY/manifest.sh"
 # shellcheck source=../patches/hermes-agent/manifest.sh
 source "$PATCHES_DIR/manifest.sh"
+# shellcheck source=../wiki/manifest.sh
+source "$WIKI_MIRROR/manifest.sh"
 
 log() { printf '[sync_overlays] %s\n' "$*" >&2; }
 warn() { printf '[sync_overlays] WARN: %s\n' "$*" >&2; }
@@ -46,11 +51,13 @@ check_secrets_in_file() {
 run_secrets_audit() {
   log "Secrets 兜底掃描..."
   local failed=0
+  local roots=( "$HERMES_OVERLAY" )
+  [[ -d "$WIKI_MIRROR" ]] && roots+=( "$WIKI_MIRROR" )
   while IFS= read -r -d '' f; do
     if ! check_secrets_in_file "$f"; then
       failed=1
     fi
-  done < <(find "$HERMES_OVERLAY" -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.md" -o -name "*.json" -o -name "*.env" -o -name "*.toml" \) -print0)
+  done < <(find "${roots[@]}" -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.md" -o -name "*.json" -o -name "*.env" -o -name "*.toml" \) -print0)
   [[ $failed -eq 0 ]] || die "偵測到非空 secret 欄位；請清空後再 export，或檢查白名單是否誤納敏感檔。"
   log "Secrets 掃描通過。"
 }
@@ -120,6 +127,16 @@ do_export() {
       log "  + $rel.patch"
     fi
   done
+
+  log "===== EXPORT: \$WIKI_DIR → wiki/ ====="
+  if [[ -d "$WIKI_DIR" ]]; then
+    local wex=() e
+    for e in "${WIKI_RSYNC_EXCLUDES[@]}"; do wex+=( "--exclude=$e" ); done
+    rsync -a --delete "${wex[@]}" "$WIKI_DIR/" "$WIKI_MIRROR/"
+    log "  + wiki/（整目錄鏡像 $WIKI_DIR）"
+  else
+    warn "wiki 實況不存在：$WIKI_DIR（跳過；hermes /llm-wiki 尚未 init？）"
+  fi
 
   log "===== EXPORT: 防呆檢查 ====="
   # untracked 但 manifest 未列入的 .py / .md（hermes-agent/ 內）
@@ -210,6 +227,19 @@ do_import() {
   if [[ $apply_failed -ne 0 ]]; then
     die "至少一個 patch 套用失敗，請見上方訊息。"
   fi
+
+  log "===== IMPORT: wiki/ → \$WIKI_DIR ====="
+  if [[ -d "$WIKI_MIRROR" ]]; then
+    mkdir -p "$WIKI_DIR"
+    local wex=() e
+    for e in "${WIKI_RSYNC_EXCLUDES[@]}"; do wex+=( "--exclude=$e" ); done
+    # import 不帶 --delete：不清掉 runtime 上比鏡像新的頁（與 overlay import 同策略）
+    rsync -a "${wex[@]}" "$WIKI_MIRROR/" "$WIKI_DIR/"
+    log "  + wiki/ → $WIKI_DIR"
+  else
+    warn "wiki 鏡像不存在：$WIKI_MIRROR（跳過）"
+  fi
+
   log "IMPORT 完成。"
 }
 

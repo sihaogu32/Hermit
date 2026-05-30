@@ -1,26 +1,21 @@
 # Wiki Schema
 
 ## Domain
-hermit 個人化 AI agent 的架構、擴充與知識工程：個人情境／領域（情境 first-class，如 health/finance/family…，不 hardcode）、connector（個人資料源接入）、權限同意中心、記憶與偏好治理、來源透明、以及在 hermes-agent 底座上的 skill / tool / plugin 擴充。
+個人知識管理：整理使用者長期關注的主題、閱讀筆記、研究素材、決策脈絡、個人工作流、工具使用心得，以及值得累積的問題答案。
 
-此 wiki 用來長期累積與維護：
-- hermit 的架構決策、擴充模式、與 hermes_law 共用底座的關係
-- 各個情境／領域的知識頁與其 connector / skill / plugin 對應
-- 移植自 hermes_law 的模式（見 `../docs/port-sources/`）改寫成 hermit 版的設計與驗證
-- 推理流程、資料來源、隱私／權限控管、驗證策略
+這個 wiki 的目標不是保存所有零碎資訊，而是把「未來會重複查、需要交叉引用、或值得逐步深化」的知識編成可維護的 markdown 知識網。
 
 ## Conventions
-- File names: lowercase, hyphens, no spaces，例如 `connector-consent-center.md`
-- Every wiki page starts with YAML frontmatter
-- Use `[[wikilinks]]` to link between pages; every new page should have at least 2 outbound links where feasible
-- When updating a page, always bump the `updated` date
-- Every new page must be added to `index.md` under the correct section
-- Every action must be appended to `log.md`
-- Raw sources under `raw/` are immutable; never edit raw files after ingest
-- Prefer concrete implementation facts over vague descriptions
+- File names: lowercase, hyphens, no spaces，例如 `personal-knowledge-management.md`。
+- Every wiki page starts with YAML frontmatter（見下方 Frontmatter）。
+- Use `[[wikilinks]]` to link between pages；每個新頁面至少 2 個 outbound links。若 wiki 還太小導致暫時不足，先連到最接近的概念頁，後續補強。
+- When updating a page, always bump the `updated` date。
+- Every new page must be added to `index.md` under the correct section。
+- Every action must be appended to `log.md`。
+- Raw sources in `raw/` are immutable：讀取可以，除重新 ingest 或修正 frontmatter/hash 外，不直接改寫內容。
+- **Provenance markers:** On pages that synthesize 3+ sources, append `^[raw/articles/source-file.md]` 或相對 raw path at the end of paragraphs whose claims come from a specific source.
 
 ## Frontmatter
-
 ```yaml
 ---
 title: Page Title
@@ -36,95 +31,99 @@ contradictions: [other-page-slug]
 ---
 ```
 
+`confidence` and `contested` are recommended for subjective, fast-changing, or weakly sourced personal workflows and research claims.
+
 ## raw/ Frontmatter
+Raw sources also get a small frontmatter block so re-ingests can detect drift:
 
 ```yaml
 ---
-source_url: file-or-url
+source_url: https://example.com/article
 ingested: YYYY-MM-DD
-sha256: <hex digest of body only>
+sha256: <hex digest of the raw content below the frontmatter>
 ---
 ```
 
+Compute `sha256` over the body only（closing `---` 之後的內容），not the frontmatter.
+
 ## Tag Taxonomy
+Only use tags listed here. Add a new tag here before using it.
 
-Only use tags listed here. Add new tags here before using them.
+### Knowledge Types
+- note
+- concept
+- framework
+- method
+- workflow
+- decision
+- question
+- summary
 
-### Personal Agent Domain
-- personal-agent
-- situation-domain
-- memory-governance
-- preferences
-- source-transparency
-- consent
-- privacy
-
-### Connectors & Data
-- connector
-- calendar
-- notes
-- cloud-files
-- email
-- data-source
-
-### Hermes Base / Extension
-- hermes
-- skill
-- plugin
-- tooling
-- integration
-- gateway
+### Personal / Work Context
+- personal
+- productivity
+- learning
+- research
+- writing
+- planning
+- tools
 - automation
 
-### Software Architecture
-- architecture
-- codebase
-- testing
-- evaluation
-- observability
-- deployment
-- security
+### Source / Quality
+- book
+- article
+- paper
+- transcript
+- meeting
+- reference
+- evergreen
+- contested
 
-### Knowledge Management
-- source
-- summary
+### Meta
 - comparison
-- query
-- decision
-- open-question
+- timeline
+- index
+- archive
 
 ## Page Thresholds
-- Create a page when an entity/concept appears in 2+ sources OR is central to one source
-- Add to existing page when a source mentions something already covered
-- DON'T create a page for passing mentions, minor implementation details, or temporary TODOs
-- Split a page when it exceeds ~200 lines
-- Archive a page when its content is fully superseded; move to `_archive/`, remove from index
+- **Create a page** when an entity/concept appears in 2+ sources OR is central to one source.
+- **Add to existing page** when a source mentions something already covered.
+- **DON'T create a page** for passing mentions, minor details, or things outside the domain.
+- **Split a page** when it exceeds ~200 lines — break into sub-topics with cross-links.
+- **Archive a page** when its content is fully superseded — move to `_archive/`, remove from index.
 
 ## Entity Pages
-One page per notable entity: a connector, tool, service, library, data source, model, API, plugin, or subsystem.
-Include: overview, role in hermit, key facts/dates, relationships via `[[wikilinks]]`, source references.
+One page per notable entity, such as a person, organization, product, tool, book, course, or project. Include:
+- Overview / what it is
+- Key facts and dates
+- Relationships to other entities using `[[wikilinks]]`
+- Source references
 
 ## Concept Pages
-One page per concept or topic: consent flow, source-transparency guard, situation-domain abstraction, memory governance, retrieval strategy, deployment boundary.
-Include: definition, current implementation state, open questions, related concepts via `[[wikilinks]]`.
+One page per reusable concept or topic. Include:
+- Definition / explanation
+- Why it matters in this personal knowledge system
+- Current understanding
+- Open questions or debates
+- Related concepts using `[[wikilinks]]`
 
 ## Comparison Pages
-Side-by-side analyses. Include what is being compared and why, dimensions (table), verdict, sources.
+Side-by-side analyses. Include:
+- What is being compared and why
+- Dimensions of comparison, preferably table format
+- Verdict or synthesis
+- Sources
 
 ## Query Pages
-File substantial answers that would be painful to reconstruct: architecture deep-dives, integration plans, workflow extraction, risk analyses, testing/evaluation strategy.
+Save only non-trivial answers that would be painful to re-derive. Include:
+- Question
+- Short answer
+- Evidence from existing wiki pages and sources
+- Follow-up questions or next actions
 
 ## Update Policy
 When new information conflicts with existing content:
-1. Check dates and source authority
-2. If genuinely contradictory, note both positions with dates and sources
-3. Mark with `contested: true` and `contradictions: [...]`
-4. Flag for user review
-
-## Porting Notes
-When documenting a pattern ported from hermes_law (see `../docs/port-sources/`):
-- Separate the original legal behavior from the proposed hermit implementation
-- Preserve the reference path for traceability
-- Identify user-facing behavior, data/permission dependencies, prompts, tests, and operational assumptions
-- Prefer incremental units that can become hermit skills, tools, or plugins
-- Record verification steps for each ported feature
+1. Check source dates and context — newer sources may supersede older ones, but personal preferences may depend on situation.
+2. If genuinely contradictory, note both positions with dates and sources.
+3. Mark the contradiction in frontmatter: `contradictions: [page-name]` and/or `contested: true`.
+4. Flag for user review in the lint report.

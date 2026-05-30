@@ -21,7 +21,7 @@ patches/hermes-agent/
 ## 維護
 
 加 / 改擴充時：
-1. 在 `~/.hermes/hermes-agent/` 內動檔（依 `wiki/project-structure.md` Extension Slots）
+1. 在 `~/.hermes/hermes-agent/` 內動檔（依 `CLAUDE.md` 擴充點 Extension Slots）
 2. 把新路徑加進 `manifest.sh`（新增檔放 `HA_FILES`、修改檔放 `HA_DIFFS`）
 3. 跑 `scripts/sync_overlays.sh export`
 4. `git add patches/ && git commit`

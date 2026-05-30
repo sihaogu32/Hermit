@@ -23,12 +23,25 @@
    | 類型 | 位置 |
    |---|---|
    | 可執行程式 / 測試 | 真實在 `~/.hermes/hermes-agent/`；repo 只存鏡像 `patches/hermes-agent/files/`（+ 修改檔走 `diffs/`） |
-   | 長期知識（人 + agent 共讀） | `wiki/` |
+   | hermes 個人知識庫（llm-wiki） | `wiki/` —— 鏡像 runtime `~/wiki`（hermes `/llm-wiki` 產物、使用者個人知識；**非** repo 開發紀錄處） |
    | runtime 狀態 | `~/.hermes/sessions/`、`~/.hermes/logs/`、`~/.hermes/state.db*` 等（不入 git、不入 overlay） |
    | 設計／安裝筆記 | `docs/`（seed-spec / install-runtime / roadmap / port-sources） |
 
-4. **加東西要同步寫 wiki** — 新檔在 `hermes-agent/` → 在 `wiki/` 留 page 解釋用途、儲存位置、執行／驗證方式；每次動作 append 到 `wiki/log.md`，新 page 加進 `wiki/index.md`。Extension Slots / Naming Rules 見 [`wiki/project-structure.md`](wiki/project-structure.md)
-5. **擴充落地後跑 `scripts/sync_overlays.sh export` 並 commit** — 本地擴充靠 `.hermes-overlay/` 與 `patches/hermes-agent/` 兩個鏡像目錄備份；白名單分別在各自的 `manifest.sh`
+4. **開發擴充的紀錄歸 Claude，不寫進 `wiki/`** — `wiki/` 是 hermes `/llm-wiki`（使用者個人知識庫）的鏡像，**不是** repo 開發紀錄的去處。新增程式／tool／connector／重要設定 → 在 `CLAUDE.md`、Claude 記憶或 `docs/` 留脈絡（用途、實際儲存路徑、執行／驗證方式）並補對應測試。擴充點與命名規則見下方「擴充點（Extension Slots）」一節
+5. **擴充落地後跑 `scripts/sync_overlays.sh export` 並 commit** — 本地擴充靠 `.hermes-overlay/`、`patches/hermes-agent/`、`wiki/` 三個鏡像目錄備份；白名單／設定分別在各自的 `manifest.sh`（`wiki/` 為整目錄鏡像 runtime `~/wiki`）
+
+## 擴充點（Extension Slots）
+
+擴充原則：新功能落在既有責任邊界內，沒有邊界時先建立清楚邊界再實作；每個新增模組都要有對應測試或文件入口；情境／領域是 first-class（紅線#1），新增 health/finance/family… 是「加一個情境 + 一組 skill + 一個 connector」，不 hardcode 進 prompt/skill/tool 名。
+
+客製化走以下其中一個 slot（呼應核心約定#2、紅線#3），不改 hermes-agent core：
+
+1. **新 connector（個人資料源接入，P1 critical path）** — `.hermes/plugins/<connector-or-consent>/dashboard/{manifest.json,plugin_api.py,dist/index.js}`；測試 `.hermes/plugins/<name>/tests/test_<slug>_api.py`（檔名帶 `<slug>` 識別，避免合併 pytest 時 basename 撞名）；讀取工具落 `hermes-agent/tools/<feature>.py`（鏡像到 `patches/hermes-agent/files/`）；寫入／對外動作走「人工確認入口」（移植 [`docs/port-sources/legal-kb-admin/`](docs/port-sources/legal-kb-admin/)）。
+2. **新 deterministic tool** — `hermes-agent/tools/<feature>.py` + `hermes-agent/tests/tools/test_<feature>.py`；若要進標準 toolset 改 `toolsets.py`。
+3. **新 reusable skill** — `.hermes/skills/<domain>/<skill_name>/SKILL.md`，寫清 trigger 條件、確切指令、雷點、驗證。
+4. **來源透明 guard（P2）** — `.hermes/plugins/source-guard/` + `hermes-agent/tools/<verify>.py`（移植 [`docs/port-sources/citation-guard/`](docs/port-sources/citation-guard/)）。
+
+落地後跑 `scripts/sync_overlays.sh export` 推到鏡像再 commit：白名單見各自 `manifest.sh`（`.hermes-overlay` 的 `skills/* plugins/*` glob 已涵蓋，新 tool 要加進 `patches/hermes-agent/manifest.sh`）。
 
 ## 工作風格
 
@@ -63,5 +76,4 @@ docker run --rm -it -e OPENAI_API_KEY=... hermit cli
 | Docker 安裝、執行、版本鎖、重建 SOP | [`docs/install-runtime.md`](docs/install-runtime.md) |
 | 分期進度（P0–P5） | [`docs/roadmap.md`](docs/roadmap.md) |
 | 移植來源參考（citation-guard / legal-kb-admin → hermit 改寫目標） | [`docs/port-sources/README.md`](docs/port-sources/README.md) |
-| 目錄責任邊界、Extension Slots、Naming Rules | [`wiki/project-structure.md`](wiki/project-structure.md) |
-| Wiki 自身規則（frontmatter、page types、log policy） | [`wiki/SCHEMA.md`](wiki/SCHEMA.md) |
+| 目錄責任邊界、Extension Slots、命名規則 | 本檔上方「核心約定」與「擴充點（Extension Slots）」 |
