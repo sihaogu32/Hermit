@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "proposal_id": "20260530T091500Z-deadbeef",
+  "created_at": "2026-05-30T09:15:00+00:00",
+  "status": "pending",
+  "source": "google_calendar",
+  "source_ref": { "connector": "google_calendar", "kind": "staging_fixture", "external_id": null },
+  "summary": { "item_count": 2, "targets": { "user": 1, "memory": 1 } },
+  "items": [
+    { "id": "item-1", "target": "user", "kind": "preference",
+      "content": "使用者每週二早上 9:00 固定有團隊 standup，排程時避開。",
+      "selected_default": true, "source_ref": { "external_id": "evt_demo_001" } },
+    { "id": "item-2", "target": "memory", "kind": "fact",
+      "content": "使用者主要行事曆時區為 Asia/Taipei。",
+      "selected_default": true, "source_ref": { "external_id": "evt_demo_002" } }
+  ]
+}

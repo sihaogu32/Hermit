@@ -5,6 +5,9 @@
 #   新增檔 → HA_FILES（鏡像到 patches/hermes-agent/files/）
 #   修改既有上游檔 → HA_DIFFS（.patch 存到 patches/hermes-agent/diffs/）
 
-HA_FILES=()
+HA_FILES=(
+  "tools/consent_memory.py"
+  "tools/consent_propose_tool.py"
+)
 
 HA_DIFFS=()

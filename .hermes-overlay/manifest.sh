@@ -14,5 +14,9 @@ HERMES_OVERLAY_PATHS=(
   # 例：
   #   "skills/personal/<my_skill>"
   #   "plugins/<my_connector>"
-  # 現況：尚無 hermit 客製 skill/plugin（runtime 端皆為上游 stock）。
+  "plugins/consent-center/dashboard/manifest.json"
+  "plugins/consent-center/dashboard/plugin_api.py"
+  "plugins/consent-center/dashboard/dist/index-0.1.0.js"
+  "plugins/consent-center/tests/test_consent_center_api.py"
+  "plugins/consent-center/tests/sample_proposal.json"
 )
