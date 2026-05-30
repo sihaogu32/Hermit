@@ -15,6 +15,7 @@ agent:
   service_tier: ''
   tool_use_enforcement: auto
   gateway_timeout_warning: 900
+  clarify_timeout: 600
   gateway_notify_interval: 180
   gateway_auto_continue_freshness: 3600
   image_input_mode: auto
@@ -33,15 +34,16 @@ terminal:
   singularity_image: docker://nikolaik/python-nodejs:python3.11-nodejs20
   modal_image: nikolaik/python-nodejs:python3.11-nodejs20
   daytona_image: nikolaik/python-nodejs:python3.11-nodejs20
-  vercel_runtime: node24
   container_cpu: 1
   container_memory: 5120
   container_disk: 51200
   container_persistent: true
   docker_volumes: []
   docker_mount_cwd_to_workspace: false
+  docker_extra_args: []
   docker_run_as_host_user: false
   persistent_shell: true
+  vercel_runtime: node24
 web:
   backend: ''
   search_backend: ''
@@ -58,6 +60,9 @@ browser:
   dialog_timeout_s: 300
   camofox:
     managed_persistence: false
+    user_id: ''
+    session_key: ''
+    adopt_existing_tab: false
 checkpoints:
   enabled: true
   max_snapshots: 50
@@ -89,11 +94,14 @@ compression:
   target_ratio: 0.2
   protect_last_n: 20
   hygiene_hard_message_limit: 400
+  protect_first_n: 3
+  abort_on_summary_failure: false
 prompt_caching:
   cache_ttl: 5m
 openrouter:
   response_cache: true
   response_cache_ttl: 300
+  min_coding_score: 0.65
 bedrock:
   region: ''
   discovery:
@@ -128,14 +136,6 @@ auxiliary:
     api_key: ''
     timeout: 120
     extra_body: {}
-  session_search:
-    provider: auto
-    model: ''
-    base_url: ''
-    api_key: ''
-    timeout: 30
-    extra_body: {}
-    max_concurrency: 3
   skills_hub:
     provider: auto
     model: ''
@@ -171,6 +171,20 @@ auxiliary:
     api_key: ''
     timeout: 120
     extra_body: {}
+  kanban_decomposer:
+    provider: auto
+    model: ''
+    base_url: ''
+    api_key: ''
+    timeout: 180
+    extra_body: {}
+  profile_describer:
+    provider: auto
+    model: ''
+    base_url: ''
+    api_key: ''
+    timeout: 60
+    extra_body: {}
   curator:
     provider: auto
     model: ''
@@ -178,19 +192,34 @@ auxiliary:
     api_key: ''
     timeout: 600
     extra_body: {}
+  session_search:
+    provider: auto
+    model: ''
+    base_url: ''
+    api_key: ''
+    timeout: 30
+    extra_body: {}
+    max_concurrency: 3
 display:
   compact: false
   personality: kawaii
   resume_display: full
+  resume_exchanges: 10
+  resume_max_user_chars: 300
+  resume_max_assistant_chars: 200
+  resume_max_assistant_lines: 3
+  resume_skip_tool_only: true
   busy_input_mode: interrupt
   tui_auto_resume_recent: false
   bell_on_complete: false
   show_reasoning: false
   streaming: false
+  timestamps: false
   final_response_markdown: strip
   persistent_output: true
   persistent_output_max_lines: 200
   inline_diffs: true
+  file_mutation_verifier: true
   show_cost: false
   skin: default
   language: zh-TW
@@ -214,6 +243,11 @@ display:
   tool_progress: all
 dashboard:
   theme: default
+  show_token_analytics: false
+  oauth:
+    client_id: ''
+    portal_url: ''
+  public_url: ''
 privacy:
   redact_pii: false
 tts:
@@ -275,6 +309,7 @@ delegation:
   provider: ''
   base_url: ''
   api_key: ''
+  api_mode: ''
   inherit_mcp_toolsets: true
   max_iterations: 50
   child_timeout_seconds: 600
@@ -313,10 +348,15 @@ discord:
   free_response_channels: ''
   allowed_channels: ''
   auto_thread: true
+  thread_require_mention: false
+  history_backfill: true
+  history_backfill_limit: 50
   reactions: true
   channel_prompts: {}
   dm_role_auth_guild: ''
   server_actions: ''
+  allow_any_attachment: false
+  max_attachment_bytes: 33554432
 whatsapp: {}
 telegram:
   reactions: false
@@ -336,6 +376,7 @@ approvals:
   timeout: 60
   cron_mode: deny
   mcp_reload_confirm: true
+  destructive_slash_confirm: true
 command_allowlist: []
 quick_commands: {}
 hooks: {}
@@ -352,6 +393,8 @@ security:
     enabled: false
     domains: []
     shared_files: []
+  acked_advisories: []
+  allow_lazy_installs: true
 cron:
   wrap_response: true
   max_parallel_jobs: null
@@ -359,12 +402,22 @@ kanban:
   dispatch_in_gateway: true
   dispatch_interval_seconds: 60
   failure_limit: 2
+  worker_log_rotate_bytes: 2097152
+  worker_log_backup_count: 1
+  orchestrator_profile: ''
+  default_assignee: ''
+  auto_decompose: true
+  auto_decompose_per_tick: 3
+  dispatch_stale_timeout_seconds: 14400
 code_execution:
   mode: project
 logging:
   level: INFO
   max_size_mb: 5
   backup_count: 3
+  memory_monitor:
+    enabled: true
+    interval_seconds: 300
 model_catalog:
   enabled: true
   url: https://hermes-agent.nousresearch.com/docs/api/model-catalog.json
@@ -372,16 +425,44 @@ model_catalog:
   providers: {}
 network:
   force_ipv4: false
+gateway:
+  strict: false
+  media_delivery_allow_dirs: []
+  trust_recent_files: true
+  trust_recent_files_seconds: 600
 sessions:
   auto_prune: false
   retention_days: 90
   vacuum_after_prune: true
   min_interval_hours: 24
+  write_json_snapshots: false
 onboarding:
   seen: {}
 updates:
   pre_update_backup: false
   backup_keep: 5
+lsp:
+  enabled: true
+  wait_mode: document
+  wait_timeout: 5.0
+  install_strategy: auto
+  servers: {}
+x_search:
+  model: grok-4.20-reasoning
+  timeout_seconds: 180
+  retries: 2
+secrets:
+  bitwarden:
+    enabled: false
+    access_token_env: BWS_ACCESS_TOKEN
+    project_id: ''
+    cache_ttl_seconds: 300
+    override_existing: true
+    auto_install: true
+    server_url: ''
+paste_collapse_threshold: 5
+paste_collapse_threshold_fallback: 5
+paste_collapse_char_threshold: 2000
 _config_version: 22
 platform_toolsets:
   cli:
