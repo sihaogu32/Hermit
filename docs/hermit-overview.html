@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>hermit 專案總覽</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card-bg: #ffffff;
+    --text: #1f2933;
+    --text-soft: #52606d;
+    --border: #e4e7eb;
+    --accent: #2563eb;
+    --accent-soft: #eff4ff;
+    --code-bg: #f0f2f5;
+    --code-text: #b1003e;
+    --sidebar-w: 256px;
+    --green: #2f8a3a;
+    --green-bg: #e3f4e4;
+    --yellow: #b8870b;
+    --yellow-bg: #fdf3d3;
+    --gray: #6b7280;
+    --gray-bg: #eceef1;
+    --orange: #c2620a;
+    --orange-bg: #fdebd8;
+    --blue-bg: #e4eefc;
+    --blue: #1d4ed8;
+  }
+  * { box-sizing: border-box; }
+  /* 同時支援淺色與深色：瀏覽器據此提供對應的原生 UI（捲軸、表單），不強制反相 */
+  :root { color-scheme: light dark; }
+  /* 深色模式：整組色票換成深色版，所有用 var(--…) 的地方自動跟著切換 */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1620;
+      --card-bg: #18222e;
+      --text: #e3e8ee;
+      --text-soft: #9fb0c0;
+      --border: #2a3744;
+      --accent: #5b8def;
+      --accent-soft: #1b2740;
+      --code-bg: #1d2a37;
+      --code-text: #ff8fb0;
+      --green: #6fcf7f;
+      --green-bg: #16301c;
+      --yellow: #e8c45c;
+      --yellow-bg: #322a12;
+      --gray: #9aa5b1;
+      --gray-bg: #232c36;
+      --orange: #e89b5c;
+      --orange-bg: #33240f;
+      --blue-bg: #16243d;
+      --blue: #7aa7f5;
+    }
+    /* 深色下表頭、code block 仍維持沉穩深色（原本就深，微調對比） */
+    th { background: #1f2c3a !important; }
+    pre.code { background: #0b1219 !important; }
+    nav.toc { background: #0a1019; }
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  code, pre.code, .mono {
+    font-family: "SFMono-Regular", "JetBrains Mono", "Fira Code", Consolas, Menlo, monospace;
+  }
+  code, .path {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-size: 0.86em;
+    word-break: break-word;
+  }
+  /* layout */
+  .layout { display: flex; }
+  nav.toc {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    overflow-y: auto;
+    background: #11212f;
+    color: #cbd5e1;
+    padding: 1.5rem 1rem;
+  }
+  nav.toc .brand {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.2rem;
+    letter-spacing: 0.5px;
+  }
+  nav.toc .brand-sub { font-size: 0.72rem; color: #7b8794; margin-bottom: 1.2rem; }
+  nav.toc a {
+    display: block;
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 0.38rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 0.1rem;
+    transition: background 0.15s, color 0.15s;
+  }
+  nav.toc a:hover { background: #1d3346; color: #fff; }
+  nav.toc a .num { color: #5b8def; font-weight: 600; margin-right: 0.4rem; }
+  main {
+    flex: 1;
+    min-width: 0;
+    padding: 0 2.5rem 5rem;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+  /* cover */
+  header.cover {
+    padding: 3.5rem 0 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+  header.cover h1 {
+    font-size: 3rem;
+    margin: 0 0 0.4rem;
+    letter-spacing: 1px;
+  }
+  header.cover .tagline {
+    font-size: 1.12rem;
+    color: var(--text-soft);
+    max-width: 760px;
+    margin: 0 0 1.5rem;
+  }
+  .badges { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.82rem; font-weight: 600;
+    padding: 0.3rem 0.75rem; border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  .badge .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .b-green { background: var(--green-bg); color: var(--green); }
+  .b-green .dot { background: var(--green); }
+  .b-yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .b-yellow .dot { background: var(--yellow); }
+  .b-gray { background: var(--gray-bg); color: var(--gray); }
+  .b-gray .dot { background: var(--gray); }
+  .b-orange { background: var(--orange-bg); color: var(--orange); }
+  .b-orange .dot { background: var(--orange); }
+  .b-date { background: var(--blue-bg); color: var(--blue); }
+  /* sections */
+  section { margin-bottom: 3rem; scroll-margin-top: 1rem; }
+  section > h2 {
+    font-size: 1.7rem;
+    margin: 0 0 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 3px solid var(--accent);
+    display: inline-block;
+  }
+  h3 { font-size: 1.2rem; margin: 1.8rem 0 0.8rem; color: var(--text); }
+  h4 { font-size: 1rem; margin: 1.2rem 0 0.5rem; color: var(--text-soft); }
+  p { margin: 0.6rem 0; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    margin: 1rem 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .lead {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 1rem 1.3rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0 1.5rem;
+    color: var(--text);
+  }
+  ul, ol { padding-left: 1.4rem; margin: 0.5rem 0; }
+  li { margin: 0.35rem 0; }
+  /* tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    background: var(--card-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  th, td {
+    text-align: left;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { background: #eef1f5; font-weight: 600; color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 0.8em; }
+  /* status pills inside tables */
+  .pill { font-size: 0.74rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; white-space: nowrap; display: inline-block; }
+  .p-green { background: var(--green-bg); color: var(--green); }
+  .p-yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .p-gray { background: var(--gray-bg); color: var(--gray); }
+  .p-orange { background: var(--orange-bg); color: var(--orange); }
+  .p-blue { background: var(--blue-bg); color: var(--blue); }
+  /* redline card */
+  .redline {
+    border-left: 5px solid #d9534f;
+    background: #fff;
+  }
+  .redline h3 { margin-top: 0; color: #c0392b; }
+  .kv { margin: 0.5rem 0; }
+  .kv b { color: var(--text); }
+  /* mermaid */
+  .diagram {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem;
+    margin: 1.2rem 0 0.6rem;
+    overflow-x: auto;
+  }
+  pre.mermaid { text-align: center; margin: 0; }
+  .diagram svg { background: transparent; max-width: 100%; height: auto; }
+  .diagram .mermaid:not([data-processed]) { color: var(--text-soft); font-size: 0.85rem; }
+  .caption {
+    font-size: 0.84rem;
+    color: var(--text-soft);
+    margin: 0.4rem 0 1.5rem;
+    padding: 0 0.4rem;
+    font-style: italic;
+  }
+  /* code blocks */
+  pre.code {
+    background: #11212f;
+    color: #e0e6ed;
+    padding: 1.1rem 1.3rem;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    margin: 1rem 0;
+  }
+  pre.code .c { color: #7b8794; }
+  pre.code .k { color: #6cb6ff; }
+  footer.pagefoot {
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-soft);
+  }
+  .facts { font-size: 0.9rem; }
+  .concept-term { font-weight: 700; color: var(--accent); }
+  .note { font-size: 0.85rem; color: var(--text-soft); }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
+  .mini-tag { font-size: 0.76rem; background: var(--accent-soft); color: var(--blue); padding: 0.2rem 0.6rem; border-radius: 6px; }
+  /* feature cards (一般觀眾用) */
+  .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1.2rem 0; }
+  .feature-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.2rem 1.3rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .feature-card .ico { font-size: 1.7rem; line-height: 1; display: block; margin-bottom: 0.5rem; }
+  .feature-card h4 { margin: 0 0 0.4rem; font-size: 1.05rem; color: var(--text); }
+  .feature-card p { margin: 0; color: var(--text-soft); font-size: 0.92rem; }
+  .feature-card .eg { display: block; margin-top: 0.6rem; font-size: 0.84rem; color: var(--blue); background: var(--accent-soft); padding: 0.45rem 0.7rem; border-radius: 8px; }
+  .assure { border-left: 5px solid var(--green); }
+  .assure h3 { margin-top: 0; color: var(--green); }
+  /* mobile */
+  .toc-toggle { display: none; }
+  @media (max-width: 900px) {
+    nav.toc {
+      position: fixed; left: 0; top: 0; z-index: 100;
+      transform: translateX(-100%); transition: transform 0.25s;
+      width: 80%; max-width: 300px;
+    }
+    nav.toc.open { transform: translateX(0); }
+    .toc-toggle {
+      display: flex; position: fixed; top: 12px; left: 12px; z-index: 101;
+      background: #11212f; color: #fff; border: none; border-radius: 8px;
+      padding: 0.5rem 0.8rem; font-size: 0.9rem; cursor: pointer; align-items: center; gap: 0.4rem;
+    }
+    main { padding: 3.5rem 1.1rem 4rem; }
+    header.cover h1 { font-size: 2.1rem; }
+    table { font-size: 0.8rem; }
+    th, td { padding: 0.5rem 0.55rem; }
+    .feature-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<button class="toc-toggle" onclick="document.querySelector('nav.toc').classList.toggle('open')">☰ 目錄</button>
+
+<div class="layout">
+<nav class="toc">
+  <div class="brand">hermit</div>
+  <div class="brand-sub">個人化 AI agent · 專案總覽</div>
+  <a href="#cover"><span class="num">·</span>封面</a>
+  <a href="#features"><span class="num">✦</span>功能介紹（看這裡）</a>
+  <a href="#vision"><span class="num">1</span>專案定位與市場前提</a>
+  <a href="#redlines"><span class="num">2</span>5 條設計紅線</a>
+  <a href="#arch"><span class="num">3</span>架構與目錄責任</a>
+  <a href="#mirrors"><span class="num">4</span>三個鏡像目錄與同步</a>
+  <a href="#slots"><span class="num">5</span>擴充點 Extension Slots</a>
+  <a href="#p1"><span class="num">6</span>P1：Connector + 同意中心</a>
+  <a href="#port"><span class="num">7</span>移植來源參考</a>
+  <a href="#roadmap"><span class="num">8</span>Roadmap P0–P5</a>
+  <a href="#commands"><span class="num">9</span>常用驗證命令</a>
+  <a href="#sources"><span class="num">·</span>資料來源</a>
+</nav>
+
+<main>
+
+<!-- ============ COVER ============ -->
+<header class="cover" id="cover">
+  <h1>hermit</h1>
+  <p class="tagline">以 NousResearch/hermes-agent 為底座的<strong>個人化 AI agent</strong>。不是「另一個更會聊天的 AI」，而是以繁體中文與台灣生活脈絡為核心的「個人知識與任務中樞」——能持續記住偏好、跨來源整合個人資料、把答案變成可執行的提醒／草稿，且讓使用者看得見依據、控制得了記憶與權限。</p>
+  <div class="badges">
+    <span class="badge b-green"><span class="dot"></span>P0 專案落地 · 已實作</span>
+    <span class="badge b-yellow"><span class="dot"></span>P1 資料與記憶治理 · 進行中</span>
+    <span class="badge b-date">產生日期 2026-05-30</span>
+  </div>
+</header>
+
+<!-- ============ ✦ FEATURES（一般觀眾） ============ -->
+<section id="features">
+  <h2>✦ · 功能介紹：hermit 能幫我做什麼</h2>
+  <div class="lead">
+    這一節寫給<strong>第一次認識 hermit 的人</strong>，不需要懂程式。簡單說：hermit 不是「另一個更會聊天的 AI」，而是一位<strong>會記得你、會幫你把事情接著做完、而且你隨時看得到它用了什麼、能隨時喊停</strong>的個人助理。它說繁體中文、懂台灣的生活脈絡（日期、地名、語氣），把「查到答案」一路接到「幫你設好提醒、寫好草稿」，而每一步都讓你做主。
+  </div>
+
+  <h3>它能幫我做什麼</h3>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="ico">🧠</span>
+      <h4>記得你說過的事</h4>
+      <p>你提過的偏好、習慣、家人、常用資訊，它會記住，下次不用重講。而且這些記憶你<strong>看得到、改得動、刪得掉</strong>。</p>
+      <span class="eg">例：你說過「我喝美式不加糖、爸媽住台中」，之後它就記得。</span>
+    </div>
+    <div class="feature-card">
+      <span class="ico">🔗</span>
+      <h4>把你的個人資料串起來（要你授權）</h4>
+      <p>在你授權的範圍內，把行事曆、信箱、雲端檔案、筆記接進來，於是它能回答跟「你」有關的問題，而不只是聊公開知識。第一個接的是 Google 行事曆。</p>
+      <span class="eg">例：「我這週有哪些行程要先準備？」</span>
+    </div>
+    <div class="feature-card">
+      <span class="ico">📎</span>
+      <h4>回答會附上出處</h4>
+      <p>問它資訊型的問題，它會把答案連同「依據是哪裡來的」一起給你，方便你自己核對，而不是憑空講一段要你照單全收。</p>
+      <span class="eg">例：查一個資訊，附上來源連結讓你點開確認。</span>
+    </div>
+    <div class="feature-card">
+      <span class="ico">✅</span>
+      <h4>把答案變成行動</h4>
+      <p>不只回答，還能幫你設提醒、排定行程、寫好郵件或訊息的草稿——把「知道」接到「做完」。寄出、送出這種最後一步，仍由你親自按下。</p>
+      <span class="eg">例：「下週一提醒我繳費」、「幫我擬一封回覆信的草稿」。</span>
+    </div>
+    <div class="feature-card">
+      <span class="ico">🇹🇼</span>
+      <h4>講你的語言、懂在地脈絡</h4>
+      <p>預設繁體中文，日期、地名、語氣都照台灣習慣走，不是翻譯腔。</p>
+      <span class="eg">例：講「下週三」「下個月初」它懂，地名口語也對得上。</span>
+    </div>
+    <div class="feature-card">
+      <span class="ico">🔒</span>
+      <h4>你完全掌控</h4>
+      <p>它要把任何事記進你的檔案、或替你對外做事，都會<strong>先問過你</strong>；高風險的事第一版根本不做。詳見下方「你永遠是按下確認的人」。</p>
+      <span class="eg">例：它想記住一件事，會先列出來等你勾選確認。</span>
+    </div>
+  </div>
+
+  <h3>它跟一般 AI 聊天哪裡不一樣</h3>
+  <table>
+    <thead><tr><th>一般 AI 聊天</th><th>hermit</th></tr></thead>
+    <tbody>
+      <tr><td>這次講完，下次多半就忘了</td><td>持續記得你的偏好，而且記憶你能看、能改、能刪</td></tr>
+      <tr><td>只能聊它訓練過的公開知識</td><td>在你授權下，接你的行事曆／信箱／檔案，回答跟「你」有關的事</td></tr>
+      <tr><td>給你一段話，出處難查</td><td>研究型回答附上依據來源，方便你核對</td></tr>
+      <tr><td>通常停在「給你答案」</td><td>把答案接成提醒、排程、草稿等實際行動</td></tr>
+      <tr><td>它在背後做了什麼，你不一定看得到</td><td>任何寫入你的資料或對外動作，都要你先確認</td></tr>
+    </tbody>
+  </table>
+
+  <h3>你永遠是按下確認的人</h3>
+  <div class="card assure">
+    <h3>安心，是這個產品的底線，不是加分項</h3>
+    <ul>
+      <li><b>不會偷偷自動動</b>：要把任何事記進你的個人檔案、或替你對外做事（例如寄信），它都會先「提出建議」，等你<strong>親自確認</strong>才會真的發生。</li>
+      <li><b>高風險的事第一版不做</b>：付款、下單、刪除這類動作，第一版刻意不碰。</li>
+      <li><b>記憶完全可控</b>：它記住的東西，你隨時看得到、改得動、刪得掉。</li>
+      <li><b>資料在你自己的地盤</b>：跑在你自己的環境裡，狀態集中保存、可備份。</li>
+    </ul>
+  </div>
+
+  <h3>適合誰、現在做到哪</h3>
+  <div class="card">
+    <p class="kv"><b>適合誰</b>：想要一個「真的記得我、幫我把事情收尾、又讓我安心掌控」的個人助理。產品建議從 26–35 歲、已習慣使用 AI 的知識工作者起步。</p>
+    <p class="kv"><b>現在做到哪</b>（白話版）：基礎骨架已搭好，目前正在做最關鍵也最難的一塊——把第一個個人資料源（Google 行事曆）安全接進來，並建立「先徵得你同意才寫入」的同意機制。語音輸入、更多資料源、行動 App 等會分階段推出。</p>
+  </div>
+  <p class="note">本節為產品設計目標與分階段規劃；部分功能仍在開發或規劃中，實際以各階段釋出為準。想看技術細節與目前進度，請往下看第 1–9 節。</p>
+</section>
+
+<!-- ============ 1. VISION ============ -->
+<section id="vision">
+  <h2>1 · 專案定位與市場前提</h2>
+  <div class="lead">
+    hermit 是以 <strong>NousResearch/hermes-agent</strong> 為底座的個人化 AI agent，定位在三交集：<strong>繁中／台灣在地化 × 權限可控的個人資料脈絡 × 從研究到提醒到草稿的閉環執行</strong>。與法務專案 hermes_law 平行獨立、共用底座與模式但不搬法務資產，唯一關鍵新工為「個人資料 connector + 權限同意中心」。
+  </div>
+
+  <h3>一句話定位（seed-spec §0 / README）</h3>
+  <div class="card">
+    <ul>
+      <li>以 NousResearch/hermes-agent 為基底的個人化 AI agent。</li>
+      <li>不是「另一個更會聊天的 AI」，而是以繁體中文與台灣生活脈絡為核心的「個人知識與任務中樞」。</li>
+      <li>四項能力：持續記住偏好、跨來源整合個人資料、把答案變成可執行的提醒／草稿、讓使用者看得見依據且控制得了記憶與權限。</li>
+      <li>差異化窗口在三交集：繁中／台灣在地化 × 權限可控的個人資料脈絡 × 從研究到提醒到草稿的閉環執行。</li>
+      <li>正面比模型能力是紅海；可打的是「在繁中環境下更可信地處理個人任務」。</li>
+    </ul>
+  </div>
+
+  <h3>與 hermes_law 的關係（seed-spec §1）</h3>
+  <div class="card">
+    <ul>
+      <li><b>專案邊界</b>：獨立專案、獨立 repo，與 hermes_law（法務）平行，不是它底下的 vertical。</li>
+      <li><b>共用</b>：同一個 hermes-agent 上游底座 + hermes_law 已驗證的架構模式。</li>
+      <li><b>不共用</b>：不共用 running instance；不搬法務資產（<code>legal_kb</code>、<code>citation-guard</code>、<code>fsc-penalty-search</code>、MOJ pipeline 全留在 hermes_law）。</li>
+      <li><b>Runtime</b>：seed-spec §1 原寫「獨立 OS user，沿用上游預設 <code>~/.hermes</code> 與 <code>~/wiki</code>，靠 <code>$HOME</code> 與法務完全隔離」。</li>
+      <li><b>為什麼獨立而非 vertical</b>：runtime 狀態、設計紅線、產品 identity 全切乾淨——個人版不必背法務 citation 紅線與 KB 維運，法務也不被個人資料 connector 的隱私複雜度污染。代價是各自維護一套 HERMES_HOME 與備份鏡像。</li>
+    </ul>
+  </div>
+
+  <h3>市場前提（seed-spec §2，公開資料基礎版）</h3>
+  <div class="card">
+    <ul>
+      <li>台灣 GenAI 使用率 <strong>43.19%</strong> / 付費訂閱率 <strong>8.54%</strong> → 使用面已主流、付費仍早期，Freemium 起手最合理。</li>
+      <li>台灣曾用 46% / 自費 17% / 每日重度 9% → 已有習慣化族群但自掏腰包仍少數。</li>
+      <li>最佳起始族群：<strong>26–35 歲</strong>（自費率最高約 23%），「高頻＋付費＋留存」飛輪最可能成形。</li>
+      <li>信任風險感知：個資外洩自評影響 36.6%；過半民眾對 AI 日常化更擔心 → 信任是採用門檻、不是加分項。</li>
+      <li>個人 Plus 約 <strong>NT$149–249/月</strong>（低於國際旗艦 US$20、高於零售工具 App）；Pro 約 <strong>NT$299–499</strong>；B2B2C 因企業／機構代付仍高於個人自費而為成長主軸。</li>
+    </ul>
+  </div>
+
+  <h3>缺口分析（seed-spec §4，最重要的一節）</h3>
+  <div class="card">
+    <ul>
+      <li>報告的 MVP <strong>幾乎全部落在現成底座上</strong>，唯一關鍵新工是「個人資料 connector + 權限同意中心」。</li>
+      <li><b>直接用（無缺口）</b>：可控長期記憶 / 提醒排程 / 多 persona / skill 擴充 / 多平台 / 繁中（hermes core + profile + gateway + SOUL.md 繁中 native）。</li>
+      <li><b>小缺口</b>：回覆可引用 / 來源透明 → citation-guard 四層 hook 架構直接用、換來源。</li>
+      <li><b>中缺口</b>：隱私「不靜默自動改／動作」 → legal-kb-admin human-confirm pattern 直接用、改成 connector 同意中心。</li>
+      <li><b>critical path（最大新工）</b>：跨來源個人脈絡（行事曆／郵件／雲端檔／筆記）——只有單一 legal KB 來源，無現成。</li>
+      <li><b>中缺口（可繞過／後置）</b>：行動端原生前台（先 messaging gateway 起步）、語音輸入／相機理解。</li>
+      <li><b>低缺口（可後置）</b>：裝置端 / hybrid 路由 / 離線（報告自列次要）。</li>
+      <li><b>結論</b>：先把 connector + 同意中心做出來（真個人化的心臟），其餘走現成底座，hybrid／離線／原生 app 後置。</li>
+    </ul>
+  </div>
+
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  需求["報告 MVP 需求"] --> 現成{"是否有現成資產"}
+  現成 -->|"直接用"| C1["記憶 提醒 persona skill 多平台 繁中<br/>hermes core profile gateway SOUL"]
+  現成 -->|"小缺口 換來源"| C2["來源透明 guard<br/>citation-guard 改寫"]
+  現成 -->|"中缺口 改 pattern"| C3["同意中心<br/>legal-kb-admin human-confirm"]
+  現成 -->|"critical path 最大新工"| C4["跨來源個人脈絡 connector<br/>行事曆 郵件 雲端檔 筆記"]
+  現成 -->|"後置"| C5["hybrid 離線 原生 app 語音相機"]
+  C4 --> 心臟["真個人化的心臟 P1 critical path"]
+    </pre>
+  </div>
+  <p class="caption">缺口分析結論：絕大多數 MVP 需求落在現成 hermes-agent 底座（直接用或小幅改寫），唯一無現成、最大新工的是「跨來源個人脈絡 connector + 權限同意中心」，列為 P1 critical path。</p>
+
+  <h3>MVP 範圍（seed-spec §6）</h3>
+  <div class="card">
+    <p>MVP 只需證明三件事：(1) 它真的比通用聊天更懂我；(2) 它能把答案變成行動；(3) 它讓我感到可控而非冒犯。</p>
+    <h4>首版必做（現成底座）</h4>
+    <ul>
+      <li>繁中與台灣語境優化（SOUL.md 繁中 native）、對話核心 + 短長期記憶。</li>
+    </ul>
+    <h4>首版必做（需新工）</h4>
+    <ul>
+      <li>行事曆／提醒／待辦（cron 現成、connector 需新工）。</li>
+      <li>雲端檔案／筆記摘要 1–2 個高價值來源（connector + 同意中心需新工）。</li>
+      <li>引用式研究回答（來源透明 guard 需移植）；語音輸入（gateway + STT，中等新工）。</li>
+      <li>郵件／訊息草稿：生成現成，郵件 connector 視範圍。</li>
+    </ul>
+    <h4>首版明確不做（高風險）</h4>
+    <ul>
+      <li>第三方服務操作（支付／訂票／下單）。</li>
+      <li>高風險領域（醫療／投資／法律）結論代理——首版只做資訊整理、不做結論代理。</li>
+      <li>MVP 後段／後置：裝置端離線摘要／搜尋。</li>
+    </ul>
+  </div>
+
+  <h3>目標族群與商業模式</h3>
+  <div class="card">
+    <ul>
+      <li><b>起始族群</b>：建議鎖 26–35 歲（自費率最高約 23%）的知識工作者，是「高頻＋付費＋留存」飛輪最可能成形的族群（seed-spec §2、§10 開放決策#5 待拍板）。</li>
+      <li><b>商業模式</b>：Freemium + 訂閱 + B2B2C 綁定；免費層導流，個人 Plus NT$149–249/月，Pro NT$299–499 解鎖代理工作流。</li>
+      <li><b>B2B2C</b>（電信／金融／教育／裝置）是成長主軸而非可選項——報告指企業／機構代付目前仍高於個人自費。</li>
+    </ul>
+  </div>
+
+  <h3>法規與合規（seed-spec §9）</h3>
+  <div class="card">
+    <ul>
+      <li><b>個資法</b>：蒐集告知、特定目的與合法基礎、安全措施、外洩通報 → 做成產品功能（權限畫面、刪除／匯出、敏感欄位遮罩、審計日誌、事故回報）。</li>
+      <li><b>AI 基本法（2026 起）</b>：七原則（永續／人類自主／隱私／資安／透明可解釋／公平／問責）+ AI 產出適當揭露標記 → 高風險回答強制 disclaimer、產出可標記。</li>
+      <li>首版避開醫療／投資／法律結論代理、支付／訂票／自動下單等高風險場景。</li>
+      <li>中國法域不視為自然延伸（另成體系）；目標市場聚焦繁中／台灣。</li>
+    </ul>
+  </div>
+
+  <h3>核心關鍵概念</h3>
+  <div class="card">
+    <p class="kv"><span class="concept-term">cloud-first + 預留 hybrid 插槽</span>：報告主張 Hybrid（on-device + cloud + 權限中心 + 記憶治理）為理想，但承認 cloud-first 可接受起步。hermit 起步走 cloud-first，預留 hybrid 路由插槽（on-device 能力後置）。</p>
+  </div>
+</section>
+
+<!-- ============ 2. REDLINES ============ -->
+<section id="redlines">
+  <h2>2 · 5 條設計紅線</h2>
+  <div class="lead">
+    設計紅線 single source = <code>docs/seed-spec.md</code> §8，改寫自 hermes_law 4 條 + 新增 1 條。紅線#3「不動 core」要求所有客製落在四個擴充點；紅線#1 約束 connector 與 skill 不得 hardcode 情境；紅線#2 由來源透明 guard 落實；紅線#5 強制寫入／對外路徑走人工確認的同意中心；紅線#4 把整個 runtime 包進隔離環境（Docker / HERMES_HOME）。
+  </div>
+
+  <div class="card redline">
+    <h3>紅線 #1 · 個人情境／領域是 first-class</h3>
+    <p class="kv"><b>內涵</b>：不把單一情境 hardcode 進 prompt/skill/tool 名；按情境分層（取代 hermes_law 的 jurisdiction first-class）。</p>
+    <p class="kv"><b>為什麼</b>：讓新增 health/finance/family 變成「加一個情境 + 一組 skill + 一個 connector」可橫向擴充。</p>
+    <p class="kv"><b>如何落地</b>：約束 connector（Slot 1）與 reusable skill（Slot 3）的命名與分層。</p>
+  </div>
+
+  <div class="card redline">
+    <h3>紅線 #2 · 來源透明／可引用是必要防線</h3>
+    <p class="kv"><b>內涵</b>：研究型回答附引用、個人化回答可追溯觸發來源；走 hook 強制，不只 prompt 紀律（移植 citation-guard）。</p>
+    <p class="kv"><b>為什麼</b>：信任是採用門檻，紀律不可靠、需 hook 強制。</p>
+    <p class="kv"><b>如何落地</b>：來源透明 guard（Slot 4，P2）＋ 來源驗證工具。</p>
+  </div>
+
+  <div class="card redline">
+    <h3>紅線 #3 · 不動 hermes-agent core 就不動</h3>
+    <p class="kv"><b>內涵</b>：客製先走 skill / profile / config / plugin / tool；動 core 是最後手段（走 fork）。</p>
+    <p class="kv"><b>為什麼</b>：保留上游可升級性，把客製集中在擴充點。</p>
+    <p class="kv"><b>如何落地</b>：所有客製落在四個 Extension Slot；core module（<code>agent/gateway/hermes_cli/cron</code>）不動。</p>
+  </div>
+
+  <div class="card redline">
+    <h3>紅線 #4 · 執行環境隔離</h3>
+    <p class="kv"><b>內涵</b>：seed-spec §8 原文為「per-project 隔離（採獨立 OS user）」，沿用上游預設 <code>~/.hermes</code> 與 <code>~/wiki</code>、靠 <code>$HOME</code> 隔離；README/CLAUDE.md 已更新為「走 Docker，HERMES_HOME 在容器內 <code>/root/.hermes</code>」。</p>
+    <p class="kv"><b>為什麼</b>：狀態集中、可攜、鏡像備份。</p>
+    <p class="kv"><b>如何落地</b>：整個 runtime 包進 Docker / HERMES_HOME 隔離環境。</p>
+  </div>
+
+  <div class="card redline">
+    <h3>紅線 #5 · 個人資料「不靜默自動動作」（新增）</h3>
+    <p class="kv"><b>內涵</b>：任何寫入個人資料或對外執行的路徑都要有明確同意／人工確認入口；高風險動作（支付／下單／刪除）首版不自動（移植 legal-kb-admin human-confirm）。</p>
+    <p class="kv"><b>為什麼</b>：對應隱私信任門檻與個資法／AI 基本法。</p>
+    <p class="kv"><b>如何落地</b>：connector（Slot 1）的寫入／對外路徑強制走 machine-proposes / human-confirms 的權限同意中心。</p>
+  </div>
+
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TB
+  subgraph 紅線["設計紅線 5 條"]
+    R1["#1 個人情境領域 first-class"]
+    R2["#2 來源透明可引用是必要防線"]
+    R3["#3 不動 hermes-agent core"]
+    R4["#4 執行環境隔離"]
+    R5["#5 個人資料不靜默自動動作"]
+  end
+  subgraph 擴充點["擴充點 Extension Slots"]
+    S1["新 connector 個人資料源接入"]
+    S2["新 deterministic tool"]
+    S3["新 reusable skill"]
+    S4["來源透明 guard"]
+  end
+  R1 --> S1
+  R1 --> S3
+  R2 --> S4
+  R3 --> S1
+  R3 --> S2
+  R3 --> S3
+  R3 --> S4
+  R5 --> S1
+  R4 --> 容器["Docker HERMES_HOME 容器內"]
+  S1 --> 同意["權限同意中心 machine proposes human confirms"]
+  R5 --> 同意
+    </pre>
+  </div>
+  <p class="caption">紅線#3「不動 core」要求所有客製都落在 connector / tool / skill / guard 四個擴充點；紅線#1 約束 connector 與 skill 不得 hardcode 情境；紅線#2 由來源透明 guard 落實；紅線#5 強制 connector 的寫入／對外路徑走人工確認的同意中心；紅線#4 把整個 runtime 包進隔離環境（Docker / HERMES_HOME）。</p>
+</section>
+
+<!-- ============ 3. ARCH ============ -->
+<section id="arch">
+  <h2>3 · 架構與目錄責任</h2>
+  <div class="lead">
+    hermit 的真實 runtime（容器內 <code>/root/.hermes</code>，含巢狀 hermes-agent source 與 <code>~/wiki</code>）不入 git；repo 只保存三個性質不同的 git 鏡像。整個 HERMES_HOME 不入 git，避免 runtime 狀態（<code>state.db</code>、<code>sessions/</code>、<code>logs/</code>、<code>auth.json</code>）污染 git。
+  </div>
+
+  <h3>HERMES_HOME 模型</h3>
+  <div class="card">
+    <ul>
+      <li><b>HERMES_HOME</b>：hermes runtime 的根目錄。Docker 內固定為 <code>/root/.hermes</code>（上游預設）；本機 host 預設 <code>~/.hermes</code>（本機實況 <code>/home/laura/.hermes</code>）。</li>
+      <li>解析規則：<code>HERMES_HOME=${HERMES_HOME:-$HOME/.hermes}</code>。</li>
+      <li><b>巢狀 hermes-agent source</b>：NousResearch/hermes-agent 整棵 source tree 巢狀在 <code>/root/.hermes/hermes-agent</code>。整棵是 upstream、不入 git；只有我方擴充（新增檔／patch）鏡像到 <code>patches/hermes-agent/</code> 受 git 追蹤。</li>
+    </ul>
+  </div>
+
+  <h3>state / code / knowledge 各歸其位對照表（核心約定#3）</h3>
+  <table>
+    <thead><tr><th>類型</th><th>位置</th></tr></thead>
+    <tbody>
+      <tr><td>可執行程式／測試</td><td>真實在 <code>~/.hermes/hermes-agent/</code>；repo 只存鏡像 <code>patches/hermes-agent/files/</code>（修改檔走 <code>diffs/</code>）</td></tr>
+      <tr><td>hermes 個人知識庫（llm-wiki）</td><td><code>wiki/</code> — 鏡像 runtime <code>~/wiki</code>（hermes <code>/llm-wiki</code> 產物、使用者個人知識；<strong>非</strong> repo 開發紀錄處）</td></tr>
+      <tr><td>runtime 狀態</td><td><code>~/.hermes/sessions/</code>、<code>~/.hermes/logs/</code>、<code>~/.hermes/state.db*</code> 等（不入 git、不入 overlay）</td></tr>
+      <tr><td>設計／安裝筆記</td><td><code>docs/</code>（seed-spec / install-runtime / roadmap / port-sources）</td></tr>
+      <tr><td>開發擴充的紀錄</td><td>歸 Claude（<code>CLAUDE.md</code> / 記憶 / <code>docs/</code>），不寫進 <code>wiki/</code>（核心約定#4）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>客製化擴充點（不動 hermes-agent core，核心約定#2 / 紅線#3）</h3>
+  <div class="card">
+    <ul>
+      <li><code>/root/.hermes/SOUL.md</code>：agent 整體人格、語氣、邊界（繁中 native、來源透明、不靜默自動動作）。</li>
+      <li><code>/root/.hermes/config.yaml</code>：模型、tool、gateway、UI 設定（不含 secrets）。</li>
+      <li><code>/root/.hermes/plugins/&lt;name&gt;/</code>：dashboard plugin（P1：connector + 同意中心）。</li>
+      <li><code>/root/.hermes/skills/&lt;domain&gt;/&lt;skill&gt;/</code>：自製 skill。</li>
+      <li><code>/root/.hermes/memories/profiles/</code>：不同 profile 的 user profile。</li>
+      <li><code>/root/.hermes/.env</code>：API key、外部服務 endpoint（不入 git）。</li>
+      <li>改完一律跑 <code>sync_overlays.sh export</code> 鏡像回 repo 再 commit。</li>
+    </ul>
+  </div>
+
+  <div class="diagram">
+    <pre class="mermaid">
+graph TD
+  C["Docker 容器（hermit image）"] --> HH["HERMES_HOME = /root/.hermes"]
+  HH --> SOUL["SOUL.md"]
+  HH --> CFG["config.yaml"]
+  HH --> MEM["memories/（MEMORY.md / USER.md）"]
+  HH --> PL["plugins/（consent-center 等）"]
+  HH --> SK["skills/"]
+  HH --> ENV[".env（不入 git）"]
+  HH --> STATE["sessions/ logs/ state.db（runtime 狀態）"]
+  HH --> HA["hermes-agent/（巢狀 upstream source）"]
+  HA --> TOOLS["tools/（google_calendar / consent_*）"]
+  HA --> TESTS["tests/"]
+  HA --> CORE["agent / gateway / hermes_cli / cron（core 不動）"]
+    </pre>
+  </div>
+  <p class="caption">HERMES_HOME（/root/.hermes）為 runtime 根，hermes-agent upstream source 巢狀其下；擴充落在 SOUL/config/memories/plugins/skills 與 hermes-agent/tools|tests，core module（agent/gateway/hermes_cli/cron）不動。</p>
+
+  <h3>值得注意的事實</h3>
+  <div class="card facts">
+    <ul>
+      <li>本機實況 HERMES_HOME 為 <code>/home/laura/.hermes</code>；容器內固定 <code>/root/.hermes</code>。</li>
+      <li>上游版本鎖：預設鎖 <code>v2026.5.29</code>（= SHA <code>e71a2bd1</code>）；不要用 pyproject package version <code>0.14.0</code>（橫跨多 release、不唯一）。build-arg <code>HERMES_AGENT_REF=v2026.5.29</code>。</li>
+      <li>port：管理後台 <code>9119</code>（hermit web，預設子命令）、gateway chat <code>8642</code>（OpenAI 相容，hermit run）；hermes web/run 預設 bind <code>127.0.0.1</code>，需用 <code>-p</code> 對映。</li>
+      <li><code>config.yaml</code>：<code>model.provider=openai-codex</code>、<code>default=gpt-5.5</code>、<code>base_url=https://chatgpt.com/backend-api/codex</code>；<code>toolsets=[hermes-cli, google-calendar]</code>；<code>display.language=zh-TW</code>、<code>personality=kawaii</code>；<code>agent.max_turns=90</code>；<code>_config_version=22</code>；<code>plugins.enabled=[]</code>。</li>
+      <li>效能目標（seed-spec §5.3）：介面確認回饋 &lt;100ms；簡單查詢首個可見 token &lt;1s；帶引用研究型回答首個有效輸出 &lt;2.5s；語音回覆使用者說完後約 300ms 內出聲。</li>
+      <li>secrets 一律 runtime 提供（<code>-e *_API_KEY</code> 或 <code>-v</code> 掛 <code>~/.hermes/.env</code>），image 內不含。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 4. MIRRORS ============ -->
+<section id="mirrors">
+  <h2>4 · 三個鏡像目錄與同步語義</h2>
+  <div class="lead">
+    repo 只保存三個性質不同的 git 鏡像（<code>.hermes-overlay/</code> 與 <code>patches/</code> 只鏡像 delta、<code>wiki/</code> 是整目錄鏡像），靠 <code>scripts/sync_overlays.sh</code> 以 <strong>export</strong>（實況→鏡像）/ <strong>import</strong>（鏡像→實況）雙向同步，並以各自 <code>manifest.sh</code> 的白名單／排除清單界定範圍。
+  </div>
+
+  <h3>overlay vs patches vs wiki 差異表</h3>
+  <table>
+    <thead><tr><th>鏡像</th><th>對應 runtime</th><th>鏡像語義</th><th>白名單機制（manifest.sh）</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>.hermes-overlay/</code></td>
+        <td><code>~/.hermes</code></td>
+        <td>「我的擴充點」<b>選擇性鏡像（delta vs stock）</b>；不鏡像上游 stock 資產</td>
+        <td><code>HERMES_OVERLAY_PATHS</code> 陣列逐一列出（刻意不用 <code>skills/* plugins/*</code> blanket glob）</td>
+      </tr>
+      <tr>
+        <td><code>patches/hermes-agent/</code></td>
+        <td><code>~/.hermes/hermes-agent</code></td>
+        <td>本地擴充鏡像：<code>files/</code>（新增檔拷貝）＋ <code>diffs/</code>（修改既有上游檔的 git patch）</td>
+        <td><code>HA_FILES</code> / <code>HA_DIFFS</code> 兩個白名單陣列</td>
+      </tr>
+      <tr>
+        <td><code>wiki/</code></td>
+        <td>hermes <code>/llm-wiki</code>（<code>wiki.path</code> 預設 <code>~/wiki</code>）</td>
+        <td><b>整目錄鏡像</b>，用排除清單剔除不入 git 的東西（與 overlay 語義相反）</td>
+        <td><code>WIKI_RSYNC_EXCLUDES</code> 排除清單</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="tag-row">
+    <span class="mini-tag">Mirror semantics：overlay/patches 只鏡像「我的擴充（delta vs stock hermes）」</span>
+    <span class="mini-tag">wiki/ 是完整鏡像 — 關鍵差異</span>
+  </div>
+
+  <h3>白名單機制與排除項</h3>
+  <div class="card">
+    <ul>
+      <li><b>overlay</b>：刻意不用 <code>skills/* plugins/*</code> blanket glob，避免掃進上游約 90 個 bundled skill、且踩到 stock skill 內的 secret placeholder。</li>
+      <li><b>wiki 排除項</b>：<code>manifest.sh</code>、<code>.gitkeep</code>（mirror-only 檔，不可被 <code>--delete</code> 清掉也不回灌 runtime）、<code>personal/cache</code>、<code>__pycache__</code>、<code>*.pyc</code>、<code>.DS_Store</code>、<code>*.swp</code>、<code>*.tmp</code>。</li>
+      <li><b>Secrets 兜底掃描</b>：export 與 import 前都跑 <code>run_secrets_audit</code>，掃 overlay 與 wiki 鏡像內 <code>*.yaml/*.yml/*.md/*.json/*.env/*.toml</code> 的 <code>api_key/secret/password/token</code> 等欄位；行尾為空字串（<code>''</code>/<code>""</code>）視為安全，其他非空命中即 abort。</li>
+    </ul>
+  </div>
+
+  <h3>export 流程（實況 → 鏡像，commit 前用）</h3>
+  <div class="card">
+    <ul>
+      <li>前置硬檢查：HERMES_HOME 與 <code>$HERMES_HOME/hermes-agent</code> 必須存在，否則 die。</li>
+      <li>EXPORT overlay：依 <code>HERMES_OVERLAY_PATHS</code>，目錄用 <code>rsync -a --delete</code>（排除 <code>__pycache__/*.pyc/*.pyo/.DS_Store/*.swp/*.tmp</code>），單檔用 <code>rsync -a</code>。</li>
+      <li>EXPORT files：依 <code>HA_FILES</code> rsync 到 <code>patches/hermes-agent/files/</code>。</li>
+      <li>EXPORT diffs：依 <code>HA_DIFFS</code> 跑 <code>git -C $HA_DIR diff</code> 產出 <code>.patch</code>；空 diff 則刪舊 patch。</li>
+      <li>EXPORT wiki：<code>rsync -a --delete</code>（帶 <code>WIKI_RSYNC_EXCLUDES</code>）<code>$WIKI_DIR → wiki/</code>。</li>
+      <li>防呆：列出 hermes-agent/ 內 untracked 但 manifest 未列入的 <code>.py/.md</code> 並 warn；最後 <code>run_secrets_audit</code> 通過才提示 git add / commit。</li>
+    </ul>
+  </div>
+
+  <h3>import 流程（鏡像 → 實況，還原／換機重建時用）</h3>
+  <div class="card">
+    <ul>
+      <li>前置硬檢查：<code>.hermes-overlay/</code> 與 <code>$HA_DIR</code> 必須存在，否則 die；先跑一次 <code>run_secrets_audit</code>。</li>
+      <li>IMPORT overlay / files / wiki：rsync 回實況；<strong>一律不帶 <code>--delete</code></strong>（刻意策略，不清掉 runtime 上比鏡像新的頁／檔）。</li>
+      <li>IMPORT diffs：對每個 <code>.patch</code> 先 <code>git apply --check</code> 預演；可套就 apply，已套過（reverse --check 乾淨）則跳過，否則 warn 並標記失敗，最後若有失敗則 die。</li>
+      <li>docker build 期自動跑 import 把 overlay+patches 疊回容器內 runtime。</li>
+    </ul>
+  </div>
+
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  subgraph REPO["repo（入 git）"]
+    OV[".hermes-overlay/<br/>白名單挑檔 delta"]
+    PF["patches/hermes-agent/files/<br/>新增檔"]
+    PD["patches/hermes-agent/diffs/<br/>修改檔 git patch"]
+    WK["wiki/<br/>整目錄鏡像（排除清單）"]
+  end
+  subgraph RT["真實 runtime（不入 git）"]
+    HH["HERMES_HOME<br/>/root/.hermes"]
+    HA["HERMES_HOME/hermes-agent<br/>upstream source"]
+    WD["wiki.path 預設 ~/wiki"]
+    ST["runtime 狀態<br/>state.db / sessions / logs / auth.json"]
+  end
+  OV -- "import 還原" --> HH
+  HH -- "export 推鏡像" --> OV
+  PF -- "import rsync" --> HA
+  HA -- "export rsync" --> PF
+  PD -- "import git apply" --> HA
+  HA -- "export git diff" --> PD
+  WK -- "import 不帶 --delete" --> WD
+  WD -- "export 帶 --delete" --> WK
+  ST -. "不備份 / 不入 git" .-> REPO
+    </pre>
+  </div>
+  <p class="caption">三個鏡像目錄與真實 runtime 的對應與雙向同步方向：export 由實況推鏡像、import 由鏡像還原；runtime 狀態（state.db / sessions / logs / auth.json）不進任何鏡像。</p>
+
+  <h3>值得注意的事實</h3>
+  <div class="card facts">
+    <ul>
+      <li>docker build 內部：clone hermes-agent 到 <code>/root/.hermes/hermes-agent</code> 並 checkout tag → <code>setup-hermes.sh</code> 建 venv + <code>uv pip install -e ".[all]"</code>（約 195 套件）→ COPY <code>. /opt/hermit/</code> 後跑 <code>sync_overlays.sh import</code> 疊回 → 中性 smoke 健檢（<code>py_compile</code> + <code>hermes --help</code>）。</li>
+      <li><b>overlay README 與 manifest 落差</b>：README 寫 <code>skills/* plugins/*</code> 為「目前無、預留 glob 槽」，但實際 manifest.sh 已不用 blanket glob，改逐一列出 consent-center 的 5 個路徑（<code>manifest.json / plugin_api.py / dist/index-0.1.0.js / tests/test_consent_center_api.py / tests/sample_proposal.json</code>）。</li>
+      <li><b>patches README 與 manifest 落差</b>：README 寫「目前無自製檔」，但實際 <code>HA_FILES</code> 已列入 4 個檔：<code>tools/consent_memory.py</code>、<code>tools/consent_propose_tool.py</code>、<code>tools/google_calendar.py</code>、<code>tests/tools/test_google_calendar.py</code>；<code>HA_DIFFS=()</code> 仍為空。</li>
+      <li><code>sync_overlays.sh</code> 子命令：<code>export</code> / <code>import</code> / <code>audit</code>（只跑 secrets 掃描）；其他參數回傳 exit 64。</li>
+      <li>wiki runtime 路徑：host=<code>/home/laura/wiki</code>、Docker=<code>/root/wiki</code>。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 5. SLOTS ============ -->
+<section id="slots">
+  <h2>5 · 擴充點（Extension Slots）</h2>
+  <div class="lead">
+    hermit 客製化一律走 4 種擴充 slot（connector / deterministic tool / reusable skill / 來源透明 guard），不動 hermes-agent core（<code>agent/gateway/hermes_cli/cron</code>）。每種 slot 各有固定落地路徑、測試位置、命名規則與雷點；動 core 是最後手段且需走 fork。
+  </div>
+
+  <h3>4 種 Slot 對照表</h3>
+  <table>
+    <thead><tr><th>Slot</th><th>落地路徑</th><th>測試位置</th><th>命名規則 / 雷點</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>1 · 新 connector</b><br/><span class="pill p-yellow">P1 critical path</span></td>
+        <td><code>.hermes/plugins/&lt;connector-or-consent&gt;/dashboard/{manifest.json, plugin_api.py, dist/index.js}</code>；讀取工具落 <code>hermes-agent/tools/&lt;feature&gt;.py</code>（鏡像到 <code>patches/.../files/</code>）</td>
+        <td><code>.hermes/plugins/&lt;name&gt;/tests/test_&lt;slug&gt;_api.py</code></td>
+        <td>測試檔名帶 <code>&lt;slug&gt;</code> 是為了避免合併 pytest 時 basename 撞名；寫入／對外動作走「人工確認入口」（移植 legal-kb-admin）</td>
+      </tr>
+      <tr>
+        <td><b>2 · 新 deterministic tool</b></td>
+        <td><code>hermes-agent/tools/&lt;feature&gt;.py</code></td>
+        <td><code>hermes-agent/tests/tools/test_&lt;feature&gt;.py</code></td>
+        <td>tool 與 test 皆用 <code>&lt;feature&gt;</code> 對齊；若要進標準 toolset <strong>必須改 <code>toolsets.py</code></strong>（預設不會自動納入）；新 tool 要加進 <code>patches/hermes-agent/manifest.sh</code> 白名單</td>
+      </tr>
+      <tr>
+        <td><b>3 · 新 reusable skill</b></td>
+        <td><code>.hermes/skills/&lt;domain&gt;/&lt;skill_name&gt;/SKILL.md</code></td>
+        <td>—</td>
+        <td>依 <code>&lt;domain&gt;/&lt;skill_name&gt;</code> 分層；內容要寫清 trigger 條件、確切指令、雷點、驗證；<code>.hermes-overlay</code> 的 <code>skills/*</code> glob 已涵蓋，不需另加</td>
+      </tr>
+      <tr>
+        <td><b>4 · 來源透明 guard</b><br/><span class="pill p-gray">P2</span></td>
+        <td><code>.hermes/plugins/source-guard/</code> + <code>hermes-agent/tools/&lt;verify&gt;.py</code></td>
+        <td>—</td>
+        <td>移植來源 <code>docs/port-sources/citation-guard/</code>；呼應紅線#2：來源透明走 hook 強制，不只 prompt 紀律</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>不可動的 hermes-agent core module</h3>
+  <div class="card">
+    <div class="tag-row">
+      <span class="mini-tag">hermes-agent/agent</span>
+      <span class="mini-tag">hermes-agent/gateway</span>
+      <span class="mini-tag">hermes-agent/hermes_cli</span>
+      <span class="mini-tag">hermes-agent/cron</span>
+    </div>
+    <p>客製先走 skill / profile / config / plugin / tool；動 core 是最後手段（走 fork）。</p>
+  </div>
+
+  <h3>落地後流程（核心約定#5）</h3>
+  <div class="card">
+    <ul>
+      <li>擴充落地後跑 <code>scripts/sync_overlays.sh export</code> 推到鏡像再 commit。</li>
+      <li>三個鏡像目錄：<code>.hermes-overlay/</code>、<code>patches/hermes-agent/</code>、<code>wiki/</code>；白名單分別在各自的 <code>manifest.sh</code>（<code>wiki/</code> 為整目錄鏡像 runtime <code>~/wiki</code>）。</li>
+      <li>加／改 hermes tool 後要<strong>重啟或 reset 現行 hermes session</strong>，schema 才會被重新探索。</li>
+    </ul>
+  </div>
+
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+    Start(["要客製化某功能"]) --> Q1{"動到 hermes-agent core<br/>agent/gateway/hermes_cli/cron?"}
+    Q1 -->|"是"| Core["最後手段：走 fork<br/>原則上不動 core"]
+    Q1 -->|"否"| Q2{"需要接入<br/>個人資料源?"}
+    Q2 -->|"是"| S1["Slot 1 新 connector<br/>.hermes/plugins/.../dashboard/<br/>+ hermes-agent/tools/feature.py<br/>寫入走人工確認入口"]
+    Q2 -->|"否"| Q3{"需要程式化的<br/>deterministic 能力?"}
+    Q3 -->|"是"| S2["Slot 2 新 deterministic tool<br/>hermes-agent/tools/feature.py<br/>+ tests/tools/test_feature.py<br/>進標準 toolset 改 toolsets.py"]
+    Q3 -->|"否"| Q4{"是可重用的<br/>行為流程/技能?"}
+    Q4 -->|"是"| S3["Slot 3 新 reusable skill<br/>.hermes/skills/domain/name/SKILL.md"]
+    Q4 -->|"否"| Q5{"要強制<br/>來源透明/可引用?"}
+    Q5 -->|"是"| S4["Slot 4 來源透明 guard P2<br/>.hermes/plugins/source-guard/<br/>+ hermes-agent/tools/verify.py"]
+    Q5 -->|"否"| Reuse["先建立清楚邊界再實作<br/>落在既有責任邊界內"]
+    S1 --> Export["跑 scripts/sync_overlays.sh export 並 commit"]
+    S2 --> Export
+    S3 --> Export
+    S4 --> Export
+    </pre>
+  </div>
+  <p class="caption">依「是否動 core → 是否接資料源 → 是否要 deterministic 能力 → 是否可重用技能 → 是否強制來源透明」逐層判斷，導向 4 個 slot 之一；任何 slot 落地後都要跑 sync_overlays.sh export 並 commit。</p>
+</section>
+
+<!-- ============ 6. P1 ============ -->
+<section id="p1">
+  <h2>6 · P1：Connector + 權限同意中心</h2>
+  <div class="lead">
+    consent-center 以「機器提議／人工確認」為核心：agent 經 <code>propose_memory</code> 把 connector 讀到的候選寫成 staging proposal，使用者在 dashboard 六端點審閱，confirm 才由非 agent tool 的 <code>apply_proposal</code> 寫入 <code>memories/managed/CONFIRMED.md</code>；Google Calendar 是首個真資料源，read-only 讀取與提議分離，落實紅線#5「不靜默自動寫入個人資料」。
+  </div>
+
+  <h3>核心概念</h3>
+  <div class="card">
+    <p class="kv"><span class="concept-term">apply_proposal（唯一寫入者）</span>：<code>tools/consent_memory.py</code> 內的 <code>apply_proposal</code> 是寫入受管記憶的唯一入口（the sole writer），且刻意不暴露為 agent tool（模組 body 無 <code>registry.register</code>、不 import registry）。</p>
+    <p class="kv"><span class="concept-term">_module_registers_tools 回 False</span>：<code>registry._module_registers_tools(consent_memory_path)</code> 必須為 False、<code>(propose_tool_path)</code> 為 True，靠掃描模組 body 有無 top-level register 呼叫判定。</p>
+    <p class="kv"><span class="concept-term">受管寫入隔離（CONFIRMED.md）</span>：<code>_managed_path()</code> 固定為 <code>HERMES_HOME/memories/managed/CONFIRMED.md</code>；只 append 自己管理的路徑，不碰 hermes 既有 stock store（<code>MEMORY.md</code> / <code>USER.md</code>），落實紅線#3。</p>
+    <p class="kv"><span class="concept-term">staging fixture → 真 API 接點不變</span>：proposal schema 已預留 <code>source="google_calendar"</code> 與 <code>source_ref</code>；<code>source_ref.kind="staging_fixture"</code> 換成真 connector 讀取後，<code>propose_memory → staging → confirm → apply_proposal</code> 的下游流程與 schema 完全不變。</p>
+    <p class="kv"><span class="concept-term">讀與提議分離</span>：<code>read_calendar_events</code> 是純讀 deterministic tool（只回事件、不自動 propose）；判斷哪些事件值得記憶交給 agent 再呼叫 <code>propose_memory</code>。</p>
+    <p class="kv"><span class="concept-term">check_fn 守 token</span>：<code>read_calendar_events</code> 註冊時帶 <code>check_fn=_token_exists</code>，只有 <code>HERMES_HOME/google_token.json</code> 存在時工具才可用；無 token 時直接回 <code>{"status":"needs_auth"}</code> 不打 API。</p>
+  </div>
+
+  <div class="diagram">
+    <pre class="mermaid">
+sequenceDiagram
+    participant U as 使用者
+    participant A as Agent
+    participant GC as read_calendar_events（read-only）
+    participant PM as propose_memory（consent-dev toolset）
+    participant CM as consent_memory（非 agent tool）
+    participant S as consent_proposals 區（staging）
+    participant D as consent-center dashboard
+    participant AP as apply_proposal（唯一寫入者）
+    participant M as memories/managed/CONFIRMED.md
+    participant H as consent_history（audit）
+    Note over GC,PM: 來源一：真 connector（source_ref.kind=real）
+    A->>GC: 讀本週行程
+    GC-->>A: events 清單（不自動寫）
+    Note over A,PM: 來源二：staging fixture（source_ref.kind=staging_fixture）
+    A->>PM: 挑值得記住的 items
+    PM->>CM: propose_memory(items, source, source_ref)
+    CM->>S: 寫 staging proposal.json（status=pending）
+    U->>D: 開 consent-center 審閱
+    D->>S: GET proposals / proposals 詳情
+    U->>D: 勾選 selected_item_ids 後 confirm
+    D->>S: 先確認 staging 檔存在（不存在則 404 且不寫）
+    D->>AP: apply_proposal(proposal_id, selected)
+    AP->>M: append 選中 items
+    AP->>H: 寫 confirm_*.json audit
+    AP->>S: unlink staging 檔
+    AP-->>D: written / count / audit_path
+    </pre>
+  </div>
+  <p class="caption">Agent 只能讀（read_calendar_events）與提議（propose_memory→staging）；真 connector 與 staging fixture 共用同一下游。寫入受管記憶唯一由 dashboard confirm 觸發的 apply_proposal 完成，落實紅線#5。</p>
+
+  <h3>consent-center 六端點與狀態流轉</h3>
+  <table>
+    <thead><tr><th>端點</th><th>行為</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /proposals</code></td><td>列舉 <code>consent_proposals/*.json</code>，依 <code>created_at</code> 倒序，每筆回精簡欄位 <code>proposal_id / created_at / source / status / summary</code></td></tr>
+      <tr><td><code>GET /proposals/{proposal_id}</code></td><td>回完整 payload（含 items 與每個 item 的 source_ref）；不存在回 404；filename 先過 <code>_safe_filename</code></td></tr>
+      <tr><td><code>POST /proposals/{id}/confirm</code></td><td>先檢查 staging 檔存在，不存在則 404 且<strong>絕不呼叫 apply_proposal</strong>；存在則同步呼叫 <code>consent_memory.apply_proposal</code>；body 為空→<code>selected_item_ids=None</code>→全部套用；apply 失敗回 500 + traceback</td></tr>
+      <tr><td><code>POST /proposals/{id}/cancel</code></td><td>直接 unlink staging proposal 檔，回 <code>{"proposal_id":..., "deleted":True}</code>；不存在 404（不留 audit）</td></tr>
+      <tr><td><code>GET /history</code></td><td>列 <code>consent_history/confirm_*.json</code> 最新 N 筆（limit 預設 50）精簡欄位 <code>filename / written_at / counts</code>，倒序</td></tr>
+      <tr><td><code>GET /history/{filename}</code></td><td>回單筆 audit 完整 payload；filename 須過 <code>_safe_filename</code> 且 <code>startswith('confirm_')</code> 與 <code>endswith('.json')</code>，否則 400；不存在 404</td></tr>
+    </tbody>
+  </table>
+  <p class="note"><code>_safe_filename</code> 守門：禁 <code>'/'</code>、<code>'\\'</code>、<code>'..'</code>、<code>'.'</code>，阻擋跨目錄存取。掛載於 <code>/api/plugins/consent-center/</code>。</p>
+
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+    A["propose_memory 寫入 staging<br/>status=pending"] --> B["GET /proposals 列表倒序"]
+    A --> C["GET /proposals/id 完整 payload"]
+    B --> D{"使用者決策"}
+    C --> D
+    D -->|"POST /confirm"| E{"staging 檔存在?"}
+    E -->|"否"| F["404 且絕不呼叫 apply"]
+    E -->|"是"| G["apply_proposal 寫 CONFIRMED.md"]
+    G --> H["寫 audit confirm_*.json"]
+    H --> I["unlink staging 檔"]
+    D -->|"POST /cancel"| J["unlink staging 檔<br/>deleted=True"]
+    I --> K["GET /history 列 audit"]
+    K --> L["GET /history/filename 單筆 audit"]
+    J -.->|"無 audit"| K
+    </pre>
+  </div>
+  <p class="caption">六端點：GET /proposals、GET /proposals/{id}、POST /confirm、POST /cancel、GET /history、GET /history/{filename}。confirm 成功才產生 history audit；cancel 僅刪 staging 不留 audit；confirm 對不存在 proposal 在呼叫 apply 前先 404。</p>
+
+  <h3>proposal schema（sample_proposal.json / _proposal_payload）</h3>
+  <div class="card">
+    <ul>
+      <li>頂層欄位：<code>schema_version=1</code>、<code>proposal_id</code>（格式 <code>_utc_ts()-uuid4().hex[:8]</code>，如 <code>20260530T091500Z-deadbeef</code>）、<code>created_at</code>（ISO）、<code>status="pending"</code>、<code>source</code>、<code>source_ref</code>、<code>summary</code>、<code>items</code>。</li>
+      <li><code>source</code> 欄預留：預設 <code>"google_calendar"</code>；<code>source_ref</code> 頂層為 <code>{connector, kind, external_id}</code>，staging 階段 <code>kind="staging_fixture"</code>、<code>external_id=null</code>。</li>
+      <li><code>summary</code>：<code>{item_count, targets}</code>，如 <code>{"user":1,"memory":1}</code>。</li>
+      <li>item 結構：<code>id</code>、<code>target</code>（'user' 或 'memory'，預設 'memory'）、<code>kind</code>（如 'fact'/'preference'）、<code>content</code>（必填）、<code>selected_default</code>、item 級 <code>source_ref</code>。<code>propose_memory</code> 對缺省欄位補值（id 自動 <code>item-{idx}</code>、target 預設 'memory'）。</li>
+    </ul>
+  </div>
+
+  <h3>受管寫入工具的隔離設計（consent_memory.py）</h3>
+  <div class="card">
+    <ul>
+      <li><b>RED LINE #5</b> 註解明寫：<code>apply_proposal</code> 是唯一寫入個人記憶者，且永不暴露為 agent tool；模組 body 刻意無 top-level <code>registry.register</code>、不 import registry。</li>
+      <li><b>RED LINE #3</b> 註解明寫：不碰 hermes core 也不碰 stock store（<code>MEMORY.md</code> / <code>USER.md</code>），全部落在自管 managed 路徑。</li>
+      <li><code>propose_memory</code>：只寫 staging（<code>consent_proposals/{proposal_id}.json</code>），從不碰任何 memory store。</li>
+      <li><code>apply_proposal</code> 流程：讀 staging → 依 <code>selected_item_ids</code> 篩選（None=全選）→ append 到 <code>CONFIRMED.md</code> → 寫 audit（<code>consent_history/confirm_{proposal_id}_{ts}.json</code>）→ unlink staging 檔。</li>
+      <li>寫入格式：每行 <code>- [target] content  (source=..., item=..., proposal=..., at=iso)</code>。</li>
+      <li>回傳：<code>{proposal_id, written:[ids], audit_path, count}</code>；不存在的 proposal raise <code>FileNotFoundError</code>。</li>
+      <li><code>propose_tool</code>（<code>consent_propose_tool.py</code>）是 consent-center feature 中唯一有 top-level <code>registry.register</code> 的模組，註冊 <code>propose_memory</code> 於 consent-dev toolset，emoji 🗳️。</li>
+    </ul>
+  </div>
+
+  <h3>測試守門（test_consent_center_api.py，共 10 組）</h3>
+  <div class="card facts">
+    <ul>
+      <li><b>case 7（紅線守門）</b> <code>test_confirm_not_found_never_calls_apply</code>：對不存在 proposal POST /confirm，monkeypatch <code>apply_proposal</code> 為會 raise 的 must_not_call，斷言回 404 且 apply 從未被呼叫。</li>
+      <li><b>case 10（紅線回歸）</b> <code>test_registry_register_points</code>：斷言 <code>_module_registers_tools(consent_memory_path) is False</code> 且 <code>(propose_tool_path) is True</code>。</li>
+      <li><b>case 9</b> <code>test_apply_proposal_writes_only_selected</code>：真跑不 mock，<code>selected_item_ids=['item-1']</code> 時只 item-1 寫進 CONFIRMED.md、item-2 不寫；audit 落 <code>consent_history/</code> 且 <code>confirm_</code> 前綴；staging 被 unlink。</li>
+      <li>fixture 模式移植自 legal-kb-admin <code>test_legal_kb_admin_api.py</code>：tmp HERMES_HOME via <code>monkeypatch.setenv</code>、<code>spec_from_file_location</code> 重載 plugin_api、FastAPI+TestClient <code>include_router prefix='/api/plugins/consent-center'</code>。</li>
+      <li>測試執行（下一階段才跑）：<code>cd ~/.hermes/hermes-agent; venv/bin/python -m pytest ~/.hermes/plugins/consent-center/tests/ -q -o 'addopts='</code>。</li>
+    </ul>
+  </div>
+
+  <h3>Google Calendar connector（google_calendar.py 已落地 + 計畫 docs）</h3>
+  <div class="card">
+    <div class="tag-row">
+      <span class="mini-tag">計畫狀態：規劃中、未動工（2026-05-30）</span>
+      <span class="mini-tag">consent-center 骨架已於 commit 497fc95 落地</span>
+    </div>
+    <ul>
+      <li><code>read_calendar_events(calendar_id='primary', days_ahead=7, max_results=50)</code> 純讀 read-only，回 <code>{status:ok, calendar_id, time_min, time_max, event_count, events}</code>；事件欄位 <code>id/summary/start/end/all_day/location/description/status/html_link</code>。</li>
+      <li>無 token 時回 <code>{status:needs_auth, message:...}</code> 不打 API，指引跑 google-workspace skill 的 <code>setup.py</code>。</li>
+      <li><b>credential 自包含</b>：自帶輕量載入（<code>Credentials.from_authorized_user_file</code> + expired 時 <code>refresh(Request())</code> 回寫），不 import bundled skill 腳本（skill 腳本是 CLI 非 module）；讀同一個 <code>HERMES_HOME/google_token.json</code>。</li>
+      <li>註冊於 google-calendar toolset，<code>check_fn=_token_exists</code>，emoji 📅；read tool <strong>是</strong> agent tool（與 consent_memory 不同，這顆要註冊）。</li>
+      <li><b>紅線對齊</b>：行事曆讀低風險可暴露；寫入個人記憶仍只走 <code>propose_memory → consent</code>；calendar create/delete（建／刪事件）屬高風險對外動作，<strong>第一版刻意不做</strong>。</li>
+      <li><b>重用盤點</b>：OAuth PKCE 流程與 credential 載入沿用 <code>~/.hermes/skills/productivity/google-workspace/scripts/</code>；venv 已裝 <code>google-api-python-client==2.194.0</code>、<code>google-auth-oauthlib==1.3.1</code>。</li>
+      <li><b>落地步驟</b>：寫 tool → 寫 mock 測試 → 更新 manifest.sh HA_FILES（+ 視需要 config.yaml toolsets）→ sync_overlays.sh export+commit →（需 OAuth）使用者授權 → 真實端到端 →（後續）cron 觸發每日讀本週行程提議。</li>
+      <li><b>待確認決策點</b>：讀與提議分離 vs 合一（建議分離）、toolset 是否預設啟用（建議啟用靠 check_fn 守 token）、讀取範圍（建議 primary、未來 7 天）、對外動作邊界（第一版只讀）。</li>
+    </ul>
+    <p class="note">fallback scope：<code>https://www.googleapis.com/auth/calendar.readonly</code>。<code>manifest.json</code>：name=consent-center、label=權限同意中心、version=0.1.0、icon=ShieldCheck、tab.path=/consent-center、entry=dist/index-0.1.0.js、api=plugin_api.py。</p>
+  </div>
+</section>
+
+<!-- ============ 7. PORT-SOURCES ============ -->
+<section id="port">
+  <h2>7 · 移植來源參考（port-sources）</h2>
+  <div class="lead">
+    hermit 從法務專案 hermes_law 停放三組「已驗證架構模式」當<strong>唯讀參考</strong>：citation-guard（→ P2 來源透明 guard，紅線#2）、verify_citation（→ P2，紅線#2）、legal-kb-admin（→ P1 權限同意中心，紅線#5）。改寫時把「法規 KB」換成「web／個人資料源／memory id」，但<strong>不直接沿用法務程式碼</strong>。
+  </div>
+
+  <div class="card">
+    <p class="kv"><span class="concept-term">port-sources/ 唯讀參考</span>：停放 hermes_law 帶過來的已驗證架構模式；不在 <code>.hermes-overlay/</code> / <code>patches/</code> 鏡像白名單內，docker build 的 <code>sync_overlays.sh import</code> 不會碰、hermes 不會載；原始 active 版本仍在 hermes_law repo（Linux）為權威來源，改寫落地後此資料夾可整個刪除。</p>
+  </div>
+
+  <h3>對映表：參考 → hermit 改寫目標</h3>
+  <table>
+    <thead><tr><th>參考來源</th><th>原為（hermes_law）</th><th>hermit 改寫目標</th><th>對應紅線 / 階段</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>citation-guard/</code></td>
+        <td>4 層 hook 強制法條引用驗證</td>
+        <td><b>來源透明 guard</b>：研究型回答附引用、個人化回答標觸發來源、記憶引用可追溯；同一套 hook 架構，把「權威來源＝法規 KB」換成「答案依據＝web／個人資料源／memory id」</td>
+        <td><span class="pill p-blue">紅線#2</span> <span class="pill p-gray">P2</span></td>
+      </tr>
+      <tr>
+        <td><code>verify_citation/</code></td>
+        <td>被 citation-guard 包夾的核心驗證工具（法名／條號／內容比對）</td>
+        <td><b>來源驗證工具</b>：對個人資料源／web 來源做存在性與內容比對</td>
+        <td><span class="pill p-blue">紅線#2</span> <span class="pill p-gray">P2</span></td>
+      </tr>
+      <tr>
+        <td><code>legal-kb-admin/</code></td>
+        <td>dashboard plugin，machine-proposes / human-confirms（cron 寫 scan dump → 人工 dashboard 按鈕才 apply，唯一寫入入口 <code>POST /scans/{id}/confirm</code>）</td>
+        <td><b>connector + 權限同意中心</b>：任何機器自己動了個人資料／對外執行都要有人按，唯一寫入入口走 plugin</td>
+        <td><span class="pill p-blue">紅線#5</span> <span class="pill p-yellow">P1 critical path</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="note"><code>reference-docs/</code> 是對應的 wiki 解說與流程圖（法務脈絡），改寫時對照用。改寫落地後可把 hermit 版 plugin / 工具放回 active 位置、加進對應 manifest、跑 sync_overlays.sh export、補 wiki page，屆時 port-sources 資料夾可整個刪除。</p>
+
+  <h3>citation-guard：四層 enforcement 規格（→ P2）</h3>
+  <div class="card">
+    <ul>
+      <li><b>事前紀律</b>：<code>.hermes/SOUL.md</code> 紀律段，要求引用前先呼叫 <code>verify_citation</code>，提升 first-pass 配合率。</li>
+      <li><b>事中強化 <code>transform_tool_result</code></b>：篩 <code>tool_name == VerifyCitation</code>，抽 <code>law_name / normalized_article_no / status</code> 寫 per-session state；<code>status==ok</code> return None（不改），其他 status return 強化版 result（『Citation guard』警語 + 原 result 含 ground-truth）。</li>
+      <li><b>事後兜底 <code>transform_llm_output</code></b>：parse final response 三型引用 + 條號 normalize，比對 per-session state（以 session_id 為鍵）；全部 ok return None，任一未驗證／非 ok → mutate 成『[Citation guard] 偵測到未驗證引用，原回答已攔截』+ append violation jsonl。</li>
+      <li><b>Audit <code>on_session_end</code></b>：drain 該 session bucket，統計 <code>verify_calls / verify_ok / violation_rate</code>，append jsonl（type=session_summary）；無資料則不寫空 record。</li>
+    </ul>
+    <p class="note">hook 強制不動 core：三 hook 全走 hermes-agent v0.13 既有 plugin hook contract（<code>hermes_cli/plugins.py:VALID_HOOKS</code>）；硬 enforcement（streaming 期間 100% 不洩漏）需動 core，spec 已封存未拍板。儲存於 <code>$HERMES_HOME/plugins/citation-guard/</code>，project plugin 需 <code>HERMES_ENABLE_PROJECT_PLUGINS=1</code> 才會被掃。</p>
+  </div>
+
+  <h3>citation-guard 已知限制（移植時要繼承的誠實限制）</h3>
+  <div class="card">
+    <ul>
+      <li><b>streaming 期間短暫洩漏</b>：<code>transform_llm_output</code> 在 LLM streaming 完成後才跑；偏離 SOUL.md、直接從記憶引用的 agent，user 仍會在 streaming 過程短暫看到 partial chunks。</li>
+      <li>配合 SOUL.md 的 agent 接近 100% 走 verify path，final 出來時已正確，根本沒違規可洩漏。</li>
+      <li><b>regex-based 偵測會漏</b>：「第八條」/「第九十五條之一」中文「之 X」型 normalize 失敗會被當未驗證；接受<strong>偽陰性 > 偽陽性</strong>的 trade-off。</li>
+      <li>hard enforcement 沒做：streaming 期間真要 100% 不洩漏需動 core，spec §「動 core 的硬 enforcement 選項」已封存、未拍板。</li>
+    </ul>
+  </div>
+
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+    Q(["使用者問題 含引用情境"]) --> SOUL["事前紀律 SOUL.md<br/>要求引用前先呼叫 verify_citation"]
+    SOUL --> Loop["agent main tool loop"]
+    Loop --> Tool{"agent 是否呼叫<br/>VerifyCitation?"}
+    Tool -->|"否"| NoVerify["state 不記錄<br/>直奔 final"]
+    Tool -->|"是"| VC["verify_citation 工具<br/>存在性 + 內容比對<br/>任一失敗回 ground-truth"]
+    VC --> TTR["事中強化 hook<br/>transform_tool_result"]
+    TTR --> Rec["寫 per-session state<br/>法名+條號 對應 status"]
+    Rec --> Ok1{"status 等於 ok?"}
+    Ok1 -->|"是"| RetNone["return None 不改 result"]
+    Ok1 -->|"否"| Reinforce["強化版 result<br/>警語 + 原 result 含 ground-truth"]
+    RetNone --> Next["下一輪迭代"]
+    Reinforce --> Next
+    NoVerify --> Next
+    Next --> Fin{"本輪是 final 迭代?"}
+    Fin -->|"否"| Loop
+    Fin -->|"是"| Stream["LLM streaming final response"]
+    Stream --> TLO["事後兜底 hook<br/>transform_llm_output"]
+    TLO --> Ext["parse 三型引用 + normalize"]
+    Ext --> Any{"有引用?"}
+    Any -->|"否"| Pass["return None 不改"]
+    Any -->|"是"| Cmp["逐個比對 per-session state"]
+    Cmp --> All{"全部都已驗證 ok?"}
+    All -->|"是"| Pass
+    All -->|"否"| Mut["mutate 攔截原回答<br/>偵測到未驗證引用 原回答已攔截"]
+    Mut --> Log["append violation jsonl<br/>type=violation"]
+    Log --> Deliver["回應送 user"]
+    Pass --> Deliver
+    Deliver --> SE["Audit hook<br/>on_session_end"]
+    SE --> Drain["drain 本 session state"]
+    Drain --> Empty{"有 verify 紀錄?"}
+    Empty -->|"否"| End(["session 結束"])
+    Empty -->|"是"| Sum["append summary jsonl<br/>verify_calls / verify_ok / violation_rate"]
+    Sum --> End
+    </pre>
+  </div>
+  <p class="caption">四層強制（事前 SOUL.md 紀律 → 事中 transform_tool_result 強化 → 事後 transform_llm_output 兜底攔截 → on_session_end Audit）構成「來源透明走 hook 強制、不只 prompt 紀律」的核心；verify_citation 工具在 loop 內做存在性與內容比對、任一失敗回 ground-truth。對應紅線#2、P2。註：transform_llm_output 是 post-hoc，streaming 期間對偏離 SOUL.md 的 agent 仍有短暫洩漏窗口。</p>
+
+  <h3>verify_citation：來源驗證工具規格（→ P2）</h3>
+  <div class="card">
+    <ul>
+      <li>三項責任：1) 確認 (法名, 條號) 在本地 L2 curated KB 真存在；2) 若提供 quoted_text 再做標準化內容比對（移空白 + 移標點 + substring containment）；3) <strong>任一失敗狀態都回 ground-truth ArticleContent</strong> 給自我修正錨點。</li>
+      <li>回傳 status 四值：<code>ok / law_not_found / article_not_found / content_mismatch</code>；<code>candidates</code> 僅 law_not_found 時填（<code>difflib.get_close_matches</code> 取前 3）；<code>match_detail</code> 僅有 quoted_text 時填。</li>
+      <li>Toolset 註冊：掛在既有 legal_kb toolset，<code>registry.register(name=VerifyCitation, toolset=legal_kb)</code>，不動 toolsets.py；純讀 KB、不寫狀態。</li>
+      <li>已知限制：MVP 僅法條不驗判例；不做項款／但書粒度；KB miss 直接回 law_not_found 不打 live MOJ；中文數字薄層僅 1-999 + 附條。</li>
+    </ul>
+  </div>
+
+  <h3>legal-kb-admin：machine-proposes / human-confirms 後台（→ P1 consent-center）</h3>
+  <div class="card">
+    <ul>
+      <li>plugin 只做兩件事：1) 列出 cron 觸發 agent 寫入的 pending scan，讓使用者勾選／確認後 apply；2) 列出歷史 changelog 回看 article-level diff。</li>
+      <li><b>不做</b>：cron 排程 CRUD（走 hermes 內建）、立即觸發按鈕、進度 polling/SSE、<code>/run /status /reset</code> 狀態機 endpoints。</li>
+      <li>六端點 API：<code>GET /scans</code>、<code>GET /scans/{scan_id}</code>、<code>POST /scans/{scan_id}/confirm</code>（同步呼 run_apply_selected）、<code>POST /scans/{scan_id}/cancel</code>、<code>GET /history?limit=50</code>、<code>GET /history/{filename}</code>。</li>
+      <li><b>與 cron 分工</b>：cron job（every 7d）每 60s tick → AIAgent 一輪對話 → agent 呼叫 <code>RunDownloadAndScan</code> → dump → 推 Telegram；cron 端不直接 apply、不夾帶 confirm 邏輯。</li>
+    </ul>
+    <h4>紅線檢查（兩處硬保證 apply 必須由人）</h4>
+    <ul>
+      <li><b>路徑 1 agent 不可呼叫 apply</b>：toolset registry 中無 <code>RunApply*</code>，只有 read-only 五工具 + RunDownloadAndScan。</li>
+      <li><b>路徑 2 apply 必須由人按按鈕</b>：唯一寫入入口為 <code>POST /scans/{id}/confirm</code>，由使用者在 dashboard 觸發。</li>
+      <li>所有 hermes-agent core 模組（agent/、gateway/、cron/、hermes_cli/ 除既有 plugin scan logic 外）皆未修改（紅線#3）。</li>
+    </ul>
+  </div>
+
+  <div class="card facts">
+    <p class="note"><b>動機事實</b>：Mata v. Avianca (2023) 美國律師因 ChatGPT 捏造判例遭制裁；Stanford HAI 2024 量到 LexisNexis Lexis+ AI、Thomson Reuters Westlaw AI Assistant 仍有 17–33% 幻覺率（verify_citation 的動機）。</p>
+  </div>
+</section>
+
+<!-- ============ 8. ROADMAP ============ -->
+<section id="roadmap">
+  <h2>8 · Roadmap P0–P5</h2>
+  <div class="lead">
+    hermit 依「先資料與記憶治理 → 對話與任務 → 整合與語音 → 商業化 → 代理工作流」順序分 P0–P5；P0 已端到端驗證（版本鎖 v2026.5.29、image 2.47 GB），P1 consent-center 骨架已落地（pytest 17 passed），6 項開放決策中 3 項已決、3 項待決。
+  </div>
+
+  <h3>P0–P5 分期表</h3>
+  <table>
+    <thead><tr><th>階段</th><th>目標 / 關鍵交付</th><th>狀態</th></tr></thead>
+    <tbody>
+      <tr><td><b>P0</b> 專案落地</td><td>從 hermes_law 副本切出乾淨 hermit 骨架（清法務資產、停放 port-sources、重寫識別／設定／文件層、Docker 化、git init）</td><td><span class="pill p-green">已實作（2026-05-29，含 build/run 端到端驗證）</span></td></tr>
+      <tr><td><b>P1</b> 資料與記憶治理<br/><span class="pill p-yellow">critical path</span></td><td>connector + 權限同意中心 plugin（第一個資料源）、記憶可見／可編輯／可刪</td><td><span class="pill p-yellow">進行中（consent-center 骨架已落地 2026-05-30）</span></td></tr>
+      <tr><td><b>P2</b> 對話與任務</td><td>繁中對話核心、提醒／排程、來源透明 guard 移植（citation-guard → source guard）</td><td><span class="pill p-gray">未開工</span></td></tr>
+      <tr><td><b>P3</b> 整合與語音</td><td>第 2–3 個 connector、檔案／筆記摘要、語音輸入、草稿</td><td><span class="pill p-gray">未開工</span></td></tr>
+      <tr><td><b>P4</b> 商業化</td><td>Freemium / Plus / Pro、B2B2C 綁定</td><td><span class="pill p-gray">未開工</span></td></tr>
+      <tr><td><b>P5</b>（後置）</td><td>hybrid / 離線 / 原生 app / 代理工作流：on-device 路由、裝置端能力</td><td><span class="pill p-orange">待 pain point</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note"><b>開發順序原則</b>（承接 seed-spec §7）：先做資料與記憶治理 → 再對話與任務 → 再語音與整合 → 再代理工作流，避免先做炫目自動化卻無權限／審計／記憶治理。</p>
+
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+    P0["P0 專案落地<br/>已實作 2026-05-29<br/>版本鎖 v2026.5.29 / image 2.47GB"]
+    P1["P1 資料與記憶治理 critical path<br/>connector + 同意中心<br/>進行中 consent-center 17 passed"]
+    P2["P2 對話與任務<br/>繁中對話 / 提醒排程 / 來源透明 guard<br/>未開工"]
+    P3["P3 整合與語音<br/>第2-3個 connector / 摘要 / 語音 / 草稿<br/>未開工"]
+    P4["P4 商業化<br/>Freemium/Plus/Pro / B2B2C<br/>未開工"]
+    P5["P5 後置 代理工作流<br/>hybrid / 離線 / 原生 app / on-device<br/>待 pain point"]
+    P0 --> P1 --> P2 --> P3 --> P4 --> P5
+    subgraph 開發順序原則
+        direction LR
+        S1["先 資料與記憶治理"] --> S2["再 對話與任務"] --> S3["再 整合與語音"] --> S4["最後 代理工作流"]
+    end
+    style P0 fill:#cde8c8,stroke:#3a8a2a
+    style P1 fill:#ffe08a,stroke:#c79100,stroke-width:3px
+    style P2 fill:#eeeeee,stroke:#999999
+    style P3 fill:#eeeeee,stroke:#999999
+    style P4 fill:#eeeeee,stroke:#999999
+    style P5 fill:#e6e0f0,stroke:#8a6db0
+    </pre>
+  </div>
+  <p class="caption">P0 已完成（綠）為基礎，目前位置在 P1 進行中（黃，粗框）；P2–P4 未開工（灰），P5 後置待 pain point（紫）。下方為 seed-spec §7 開發順序原則：先資料/記憶治理 → 對話/任務 → 整合/語音 → 代理工作流。</p>
+
+  <h3>P0 落地清單（2026-05-28）</h3>
+  <div class="card">
+    <ul>
+      <li><span class="pill p-green">已實作</span> 清法務資產（legal KB / legal-kb-browser / fsc-penalty-search / legal_kb 工具 / MOJ pipeline / legal wiki）。</li>
+      <li><span class="pill p-green">已實作</span> 停放 port-sources（citation-guard / legal-kb-admin / verify_citation → <code>docs/port-sources/</code>）。</li>
+      <li><span class="pill p-green">已實作</span> 重寫識別／設定層（README / CLAUDE / SOUL / config / memories / 鏡像 README）。</li>
+      <li><span class="pill p-green">已實作</span> 重寫 wiki 知識層（SCHEMA / project-structure / index / log）。</li>
+      <li><span class="pill p-green">已實作</span> 重寫 docs（seed-spec 畢業 / install-runtime Docker 化 / roadmap）。</li>
+      <li><span class="pill p-green">已實作</span> Docker 化（Dockerfile / entrypoint 去法務）；manifest / ignore 清法務、改 glob 槽。</li>
+      <li><span class="pill p-green">已實作</span> git init + 初次 commit（commit <code>c83b651</code>，working tree clean）。</li>
+      <li><span class="pill p-green">已實作</span> Docker build / run 端到端驗證（2026-05-29，rootless podman 5.6.2 跑通；build 15 步全過、smoke check py_compile + hermes --help 通過；run 驗證 entrypoint 透傳／cli 別名／overlay 還原／hermes doctor exit 0）；版本鎖已 bump 至 <code>v2026.5.29</code>（SHA <code>e71a2bd1</code> = package v0.15.1，距上游 HEAD 113 commits），image 2.47 GB。</li>
+    </ul>
+  </div>
+
+  <h3>P1 進度（2026-05-30）</h3>
+  <div class="card">
+    <ul>
+      <li>第一刀 = 權限同意中心 plugin 骨架（落實紅線#5）：用 staging fixture 跑通 machine proposes → human confirms，真 Google Calendar connector 後接（proposal schema 已預留 source 欄、屆時不變）。</li>
+      <li><span class="pill p-green">已實作</span> consent-center dashboard plugin（六端點）— <code>.hermes/plugins/consent-center/dashboard/{manifest.json,plugin_api.py,dist/index-0.1.0.js}</code>。</li>
+      <li><span class="pill p-green">已實作</span> 受管寫入工具（唯一寫入入口、非 agent tool）— <code>hermes-agent/tools/consent_memory.py</code>（寫自有受管檔 <code>memories/managed/CONFIRMED.md</code>，不碰 core MEMORY.md/USER.md）。</li>
+      <li><span class="pill p-green">已實作</span> dev-only 提議工具（toolset consent-dev 預設關，只寫 staging）— <code>hermes-agent/tools/consent_propose_tool.py</code>。</li>
+      <li><span class="pill p-green">已實作</span> pytest（含紅線守門 + 紅線回歸，<strong>17 passed</strong>）— <code>.hermes/plugins/consent-center/tests/test_consent_center_api.py</code>。</li>
+      <li><span class="pill p-green">已實作</span> 鏡像白名單 + sync export（兩個 manifest.sh 逐檔加；export 無 warn、secrets 掃描通過）。</li>
+      <li><span class="pill p-gray">未開工</span> 真 Google Calendar connector（OAuth + 讀取工具）— 取代 staging fixture；接點走 propose_memory → consent 流程不變。</li>
+      <li><span class="pill p-gray">未開工</span> 記憶可見／可編輯／可刪。</li>
+    </ul>
+  </div>
+
+  <h3>開放決策（承接 seed-spec §10，6 項）</h3>
+  <table>
+    <thead><tr><th>#</th><th>決策</th><th>狀態</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>專案命名 + 新 repo</td><td><span class="pill p-blue">已決：hermit</span></td></tr>
+      <tr><td>2</td><td>部署模型（單人工具 / 多人 / SaaS）</td><td><span class="pill p-orange">待決；跑通單人 MVP 後評估</span></td></tr>
+      <tr><td>3</td><td>第一個 connector（行事曆 / 筆記 / 雲端檔 / 郵件）</td><td><span class="pill p-blue">已決：Google Calendar（行事曆）</span></td></tr>
+      <tr><td>4</td><td>行動端（messaging gateway 起步 vs 原生 app）</td><td><span class="pill p-orange">待決；gateway 可快速驗證</span></td></tr>
+      <tr><td>5</td><td>起始族群是否鎖 26–35 歲知識工作者</td><td><span class="pill p-orange">待決</span></td></tr>
+      <tr><td>6</td><td>私有 Google Drive 需求文件納入</td><td><span class="pill p-orange">待決；納入後回頭修訂 seed-spec</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>輔助來源（log / MEMORY / SOUL）</h3>
+  <div class="card facts">
+    <ul>
+      <li><code>wiki/log.md</code>：2026-05-30 create | Wiki initialized，Domain 個人知識管理，Location <code>/home/laura/wiki</code>。</li>
+      <li><code>.hermes-overlay/memories/MEMORY.md</code>：hermit 定位為個人知識與任務中樞（記憶偏好、跨來源整合個人資料、把答案變成提醒/草稿），而非通用聊天。</li>
+      <li><code>.hermes-overlay/SOUL.md</code>：明定四項紀律—預設繁中與台灣在地化、來源透明、個人資料不靜默自動動作（支付/下單/刪除等高風險首版不自動）、記憶可見可編輯可刪除。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 9. COMMANDS ============ -->
+<section id="commands">
+  <h2>9 · 常用驗證命令</h2>
+
+  <h3>Docker build / run</h3>
+  <pre class="code"><span class="c"># build（repo 根執行）</span>
+docker build -f docker/Dockerfile -t hermit .
+
+<span class="c"># 管理後台 / 互動 CLI（secrets 走 -e 或 -v 掛 .env）</span>
+docker run --rm -p 9119:9119 -e OPENAI_API_KEY=... hermit web
+docker run --rm -it -e OPENAI_API_KEY=... hermit cli</pre>
+  <p class="note">port：管理後台 <code>9119</code>（hermit web，預設子命令）、gateway chat <code>8642</code>（OpenAI 相容，hermit run）；hermes web/run 預設 bind <code>127.0.0.1</code>，需用 <code>-p</code> 對映。build-arg <code>HERMES_AGENT_REF=v2026.5.29</code>。secrets 一律 runtime 提供，image 內不含。加／改 hermes tool 後要重啟或 reset 現行 hermes session，schema 才會被重新探索。</p>
+
+  <h3>consent-center pytest（下一階段才跑）</h3>
+  <pre class="code">cd ~/.hermes/hermes-agent
+venv/bin/python -m pytest ~/.hermes/plugins/consent-center/tests/ -q -o 'addopts='</pre>
+  <p class="note">P1 consent-center 已驗證 17 passed（含紅線守門 case 7 + 紅線回歸 case 10）。</p>
+
+  <h3>鏡像同步</h3>
+  <pre class="code"><span class="c"># 擴充落地後：實況 → 鏡像，再 commit</span>
+scripts/sync_overlays.sh export
+
+<span class="c"># 還原 / 換機重建：鏡像 → 實況（docker build 期自動跑）</span>
+scripts/sync_overlays.sh import
+
+<span class="c"># 只跑 secrets 掃描</span>
+scripts/sync_overlays.sh audit</pre>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="pagefoot" id="sources">
+  <h3>資料來源</h3>
+  <p>本 HTML 由以下 hermit repo 檔案的結構化抽取彙整而成（唯一事實來源）：</p>
+  <ul>
+    <li><b>read:vision</b> — <code>docs/seed-spec.md</code> 與 <code>README.md</code>（專案定位、市場前提、缺口分析、MVP 範圍、設計紅線）。</li>
+    <li><b>read:arch</b> — 目錄責任邊界、HERMES_HOME 模型、三個鏡像目錄（overlay / patches / wiki）語義與 <code>scripts/sync_overlays.sh</code> sync 流程、<code>docs/install-runtime.md</code>、<code>CLAUDE.md</code>。</li>
+    <li><b>read:extensions</b> — 擴充點（Extension Slots）與核心約定（落地路徑、測試位置、命名規則、雷點、不可動的 hermes-agent core module）。</li>
+    <li><b>read:p1-consent</b> — P1 critical path：<code>.hermes/plugins/consent-center/</code>、<code>hermes-agent/tools/consent_memory.py</code> / <code>consent_propose_tool.py</code> / <code>google_calendar.py</code>、google-calendar-connector-plan.md。</li>
+    <li><b>read:port-sources</b> — <code>docs/port-sources/</code>（citation-guard / legal-kb-admin / verify_citation）移植模式參考。</li>
+    <li><b>read:roadmap</b> — <code>docs/roadmap.md</code>（P0–P5 分期、P0 落地、P1 進度、開放決策）、<code>wiki/log.md</code>、<code>.hermes-overlay/memories/MEMORY.md</code>、<code>.hermes-overlay/SOUL.md</code>。</li>
+  </ul>
+  <p class="note">產生日期 2026-05-30 · 狀態：P0 已實作 / P1 進行中 · 本文件忠實依抽取資料彙整，未新增資料外的功能或承諾。</p>
+</footer>
+
+</main>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  const FONT = '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, sans-serif';
+
+  // 淺色與深色各一套高對比 themeVariables；對齊頁面 CSS 色票，深色下也清楚可讀
+  const LIGHT = {
+    fontFamily: FONT, fontSize: '15px', background: '#ffffff',
+    primaryColor: '#eff4ff', primaryBorderColor: '#2563eb', primaryTextColor: '#1f2933',
+    secondaryColor: '#e3f4e4', secondaryBorderColor: '#2f8a3a', secondaryTextColor: '#1f2933',
+    tertiaryColor: '#fdf3d3', tertiaryBorderColor: '#b8870b', tertiaryTextColor: '#1f2933',
+    lineColor: '#52606d', textColor: '#1f2933', nodeBorder: '#2563eb',
+    clusterBkg: '#f0f2f5', clusterBorder: '#9aa5b1', titleColor: '#1f2933', edgeLabelBackground: '#ffffff',
+    actorBkg: '#eff4ff', actorBorder: '#2563eb', actorTextColor: '#1f2933', actorLineColor: '#9aa5b1',
+    signalColor: '#1f2933', signalTextColor: '#1f2933',
+    labelBoxBkgColor: '#e4eefc', labelBoxBorderColor: '#1d4ed8', labelTextColor: '#1f2933',
+    loopTextColor: '#1f2933', noteBkgColor: '#fdf3d3', noteBorderColor: '#b8870b', noteTextColor: '#1f2933',
+    sequenceNumberColor: '#ffffff', activationBkgColor: '#e4eefc', activationBorderColor: '#2563eb',
+  };
+  const DARK = {
+    fontFamily: FONT, fontSize: '15px', background: '#18222e',
+    primaryColor: '#1b2740', primaryBorderColor: '#5b8def', primaryTextColor: '#e3e8ee',
+    secondaryColor: '#16301c', secondaryBorderColor: '#6fcf7f', secondaryTextColor: '#e3e8ee',
+    tertiaryColor: '#322a12', tertiaryBorderColor: '#e8c45c', tertiaryTextColor: '#e3e8ee',
+    lineColor: '#9fb0c0', textColor: '#e3e8ee', nodeBorder: '#5b8def',
+    clusterBkg: '#121b25', clusterBorder: '#3a4856', titleColor: '#e3e8ee', edgeLabelBackground: '#18222e',
+    actorBkg: '#1b2740', actorBorder: '#5b8def', actorTextColor: '#e3e8ee', actorLineColor: '#4a5a6a',
+    signalColor: '#cdd7e1', signalTextColor: '#e3e8ee',
+    labelBoxBkgColor: '#16243d', labelBoxBorderColor: '#7aa7f5', labelTextColor: '#e3e8ee',
+    loopTextColor: '#e3e8ee', noteBkgColor: '#322a12', noteBorderColor: '#e8c45c', noteTextColor: '#f1e8cf',
+    sequenceNumberColor: '#0f1620', activationBkgColor: '#16243d', activationBorderColor: '#5b8def',
+  };
+
+  const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+
+  // 保存每張圖的原始 mermaid 原始碼，切換主題時可重新渲染
+  const blocks = Array.from(document.querySelectorAll('pre.mermaid'));
+  const sources = blocks.map(el => el.textContent);
+
+  async function render() {
+    const isDark = darkMq.matches;
+    mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: isDark ? DARK : LIGHT });
+    for (let i = 0; i < blocks.length; i++) {
+      const el = blocks[i];
+      el.removeAttribute('data-processed');
+      el.textContent = sources[i];
+      try {
+        const { svg } = await mermaid.render('mmd-' + i + '-' + (isDark ? 'd' : 'l'), sources[i]);
+        el.innerHTML = svg;
+        el.setAttribute('data-processed', 'true');
+      } catch (e) {
+        el.textContent = sources[i];
+      }
+    }
+  }
+
+  render();
+  // OS／瀏覽器深色模式切換時即時重繪，不需重新整理
+  darkMq.addEventListener('change', render);
+</script>
+</body>
+</html>
