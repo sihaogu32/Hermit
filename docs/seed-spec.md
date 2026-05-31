@@ -99,6 +99,8 @@
 - llm-wiki = 新 user 的 `~/wiki`（上游預設）→ relocate/symlink 指向新 repo 的 wiki 目錄（比照 hermes_law 做法，但在新 user 下、不衝突）
 - overlay/patches 鏡像備份比照 hermes_law 各自一套
 
+> **實作現況（2026-05-31）**：隔離落地已從「獨立 OS user」轉為 **Docker 容器**（HERMES_HOME = 容器內 `/root/.hermes`，靠容器邊界與法務隔離），更可攜、可重現。本節保留原始選型理路；該紅線在 Docker 下的具體實作 single source 見 [`install-runtime.md`](install-runtime.md)。
+
 ### 5.2 分層（移植 hermes_law 概念架構 + 報告權限中心）
 
 ```mermaid

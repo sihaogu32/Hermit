@@ -25,4 +25,8 @@ HERMES_OVERLAY_PATHS=(
   "plugins/calendar/dashboard/plugin_api.py"
   "plugins/calendar/dashboard/dist/index-0.1.0.js"
   "plugins/calendar/tests/test_calendar_api.py"
+  # source-guard：來源透明 hook plugin（P2，紅線#2；非 dashboard，走 plugin.yaml + __init__.py 的 hook）
+  "plugins/source-guard/plugin.yaml"
+  "plugins/source-guard/__init__.py"
+  "plugins/source-guard/tests/test_source_guard.py"
 )

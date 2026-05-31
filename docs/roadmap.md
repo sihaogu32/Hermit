@@ -14,7 +14,7 @@
 |---|---|---|---|
 | **P0** | 專案落地 | 從 hermes_law 副本切出乾淨 hermit 骨架（清法務資產、停放 port-sources、重寫識別／設定／文件層、Docker 化、`git init`） | **已實作（2026-05-29，含 build/run 端到端驗證）** |
 | P1 | 資料與記憶治理（critical path） | **connector + 權限同意中心 plugin**（第一個資料源）、記憶可見／可編輯／可刪 | 進行中（consent-center 骨架已落地 2026-05-30；原生行事曆免授權核心已實作 2026-05-31；詳見下方「P1 進度」） |
-| P2 | 對話與任務 | 繁中對話核心、提醒／排程、**來源透明 guard 移植**（citation-guard → source guard） | 未開工 |
+| P2 | 對話與任務 | 繁中對話核心、提醒／排程、**來源透明 guard 移植**（citation-guard → source guard） | 進行中（來源透明 guard MVP 已實作 2026-05-31，見下方「P2 進度」；繁中對話核心／提醒排程未開工） |
 | P3 | 整合與語音 | 第 2–3 個 connector、檔案／筆記摘要、語音輸入、草稿 | 未開工 |
 | P4 | 商業化 | Freemium / Plus / Pro、B2B2C 綁定 | 未開工 |
 | P5（後置） | hybrid / 離線 / 原生 app / 代理工作流 | on-device 路由、裝置端能力 | 待 pain point |
@@ -42,10 +42,23 @@
 | consent-center dashboard plugin（六端點 proposals/confirm/cancel/history） | 已實作 `.hermes/plugins/consent-center/dashboard/{manifest.json,plugin_api.py,dist/index-0.1.0.js}` |
 | 受管寫入工具（唯一寫入入口、**非** agent tool） | 已實作 `hermes-agent/tools/consent_memory.py`（module body 無 top-level `registry.register` → `_module_registers_tools` 回 False；寫自有受管檔 `memories/managed/CONFIRMED.md`，不碰 core MEMORY.md/USER.md） |
 | dev-only 提議工具（toolset `consent-dev` 預設關，只寫 staging） | 已實作 `hermes-agent/tools/consent_propose_tool.py`（feature 內唯一 register 點） |
-| pytest（含紅線守門 + 紅線回歸，17 passed） | 已實作 `.hermes/plugins/consent-center/tests/test_consent_center_api.py`；驗證 `cd ~/.hermes/hermes-agent && venv/bin/python -m pytest ~/.hermes/plugins/consent-center/tests/ -q -o 'addopts='` |
+| pytest（含紅線守門 + 紅線回歸，18 passed） | 已實作 `.hermes/plugins/consent-center/tests/test_consent_center_api.py`；驗證 `cd ~/.hermes/hermes-agent && venv/bin/python -m pytest ~/.hermes/plugins/consent-center/tests/ -q -o 'addopts='`（自製擴充全套 `scripts/run_tests.sh` 為 76 passed） |
 | 鏡像白名單 + sync export | 已實作（`.hermes-overlay/manifest.sh`、`patches/hermes-agent/manifest.sh` 逐檔加；export 無 warn、secrets 掃描通過） |
 | 原生行事曆免授權核心（三源合併視圖） | 已實作（commit 3d0298f）：`calendar_store.py`／`calendar_read.py`／`consent_event.py` + `plugins/calendar` dashboard（月/週/列表 + 手動增刪改）；Google 既有 read tool 改造成唯讀 source adapter（`google_calendar.py`）；agent 新增走 `propose_event` → consent。**下一段**：ICS 抓取/解析（需 icalendar，deferred stub 已備位）、Google OAuth 真實端到端驗證 |
 | 記憶可見／可編輯／可刪 | 未開工 |
+
+## P2 進度（2026-05-31）
+
+來源透明 guard 移植（citation-guard / verify_citation → hermit 版），落實紅線#2「走 hook 強制，不只 prompt 紀律」。把法務「權威來源＝法規 KB」換成 hermit「答案依據＝web 連結／個人記憶」，沿用同一套 hook 架構（事前 SOUL ／事中 transform_tool_result ／事後 transform_llm_output ／audit on_session_end）。
+
+| 項目 | 狀態 / 落地位置 |
+|---|---|
+| source-guard hook plugin（事中 grounding + 事後攔截 + audit） | 已實作 `.hermes/plugins/source-guard/{plugin.yaml,__init__.py}`：`transform_tool_result` 蒐集本回合工具抓取過的 URL（排除 VerifySource 自我 echo）；`transform_llm_output` 偵測 final response 中未追溯連結（本回合沒抓過＝杜撰強訊號）依 mode 處置；`on_session_end` dump 統計到 `logs/source_violations/<YYYYMMDD>.jsonl`。grounding 採網域層級比對（接受偽陰性 > 偽陽性，同 citation-guard 哲學） |
+| 來源驗證工具 VerifySource（事前主動驗證入口） | 已實作 `hermes-agent/tools/verify_source.py`：`memory`→對記憶庫（MEMORY.md／USER.md／managed/*.md）標準化內容比對回 ok/not_found；`url`→external（離線不抓取，提醒只引用實際抓過的連結）。唯讀工具、toolset `source-guard` |
+| 事前紀律 | 已補強 `SOUL.md` 來源透明段（只引用本回合實際抓取過的連結；引用記憶前可用 VerifySource） |
+| 啟用 | 已掛上：`config.yaml` `plugins.enabled: [source-guard]` + `toolsets`／`platform_toolsets.cli` 加 `source-guard`。預設 `HERMIT_SOURCE_GUARD_MODE=block`（攔截取代未追溯回答），可設 `annotate`（保留原文加警示）或 `off`（純記錄）。**下次重啟 hermes session 生效** |
+| pytest（tool 13 + plugin 16） | 已實作 `tests/tools/test_verify_source.py`、`.hermes/plugins/source-guard/tests/test_source_guard.py`；`scripts/run_tests.sh` 全套 **105 passed**（tool 62 + plugin 43） |
+| **下一段** | 繁中對話核心、提醒／排程；先觀察 `logs/source_violations` 的偽陽性率，再決定是否收緊（如改 path-level grounding、把 research-no-source 從 log-only 升為提示） |
 
 ## 開放決策（承接 seed-spec §10）
 

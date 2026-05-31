@@ -51,8 +51,8 @@
 
 ## 目前進度
 
-- **P0「專案落地」進行中**：已從 hermes_law 副本切出乾淨骨架（清掉法務資產、停放 port-sources 參考、重寫識別／設定／文件層、Docker 化）。
-- 下一步 **P1（critical path）= connector + 權限同意中心 plugin**（移植 [`docs/port-sources/legal-kb-admin/`](docs/port-sources/legal-kb-admin/) 的 machine-proposes / human-confirms 形狀）。
+- **P0「專案落地」已完成**（2026-05-29，含 build/run 端到端驗證）：已從 hermes_law 副本切出乾淨骨架（清掉法務資產、停放 port-sources 參考、重寫識別／設定／文件層、Docker 化）。
+- **P1（critical path）進行中**：權限同意中心 plugin（machine-proposes / human-confirms，移植 [`docs/port-sources/legal-kb-admin/`](docs/port-sources/legal-kb-admin/)）與第一個資料源「原生行事曆免授權核心」已落地並帶測試（consent-center + calendar，6 個 tool 全綠）；**待補**：ICS 抓取／解析、記憶可見／可編輯／可刪 UI。
 - roadmap P0–P5 見 [`docs/roadmap.md`](docs/roadmap.md)。
 
 ## 常用驗證命令（Docker）

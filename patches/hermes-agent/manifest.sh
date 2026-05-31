@@ -12,12 +12,14 @@ HA_FILES=(
   "tools/calendar_store.py"
   "tools/calendar_read.py"
   "tools/consent_event.py"
+  "tools/verify_source.py"
   "tests/tools/test_google_calendar.py"
   "tests/tools/test_calendar_store.py"
   "tests/tools/test_calendar_read.py"
   "tests/tools/test_consent_event.py"
   "tests/tools/test_consent_memory.py"
   "tests/tools/test_consent_propose_tool.py"
+  "tests/tools/test_verify_source.py"
 )
 
 HA_DIFFS=()

@@ -11,8 +11,8 @@ hermit 的執行環境走 **Docker 容器**：HERMES_HOME 在容器內 `/root/.h
 | repo 內（入 git） | 對應的容器內位置（不入 git） |
 |---|---|
 | `.hermes-overlay/` | `/root/.hermes/`（擴充點：SOUL.md、config.yaml、plugins、skills、memories） |
-| `patches/hermes-agent/files/` | `/root/.hermes/hermes-agent/`（新增檔；目前無） |
-| `patches/hermes-agent/diffs/` | `/root/.hermes/hermes-agent/`（修改既有上游檔的 git patch；目前無） |
+| `patches/hermes-agent/files/` | `/root/.hermes/hermes-agent/`（新增檔；已有 consent／calendar 系列 tools 與對應測試） |
+| `patches/hermes-agent/diffs/` | `/root/.hermes/hermes-agent/`（修改既有上游檔的 git patch；目前無，未動上游既有檔） |
 
 兩者由 [`scripts/sync_overlays.sh`](../scripts/sync_overlays.sh) 雙向同步（`export` 推鏡像、`import` 還原）；`docker build` 期會自動跑 `import` 把鏡像疊回容器內 runtime。
 
@@ -32,7 +32,7 @@ build 內部（細節見 [`docker/Dockerfile`](../docker/Dockerfile)）：
 3. `COPY . /opt/hermit/` → 跑 `sync_overlays.sh import` 把鏡像（overlay + patches）疊回 `/root/.hermes`
 4. 中性 smoke 健檢（py_compile + `hermes --help`）
 
-> **版本鎖**：用 git tag / commit 鎖上游（如 `v2026.5.29` = SHA `e71a2bd1`），不要用 pyproject 的 package version（`0.14.0` 橫跨多個 release、不唯一）。若 `patches/diffs/` 有改上游既有檔的 patch，`git apply` 才挑版本；目前 `diffs/` 為空，硬失敗風險低。
+> **版本鎖**：用 git tag / commit 鎖上游（如 `v2026.5.29` = SHA `e71a2bd1`），不要用 pyproject 的 package version（`0.14.0` 橫跨多個 release、不唯一）。若 `patches/diffs/` 有改上游既有檔的 patch，`git apply` 才挑版本；`files/` 已有新增的 connector tools／測試（純新增、不靠 patch 套用），`diffs/` 仍為空，故 import 硬失敗風險低。
 
 ## Run
 

@@ -1,0 +1,10 @@
+name: source-guard
+version: 0.1.0
+description: "事中／事後 enforcement 設計紅線#2（來源透明）：蒐集本回合實際抓取過的來源，攔截 final response 中未追溯的引用連結並寫 audit log。"
+author: hermit
+kind: standalone
+provides_tools: []
+provides_hooks:
+  - transform_tool_result
+  - transform_llm_output
+  - on_session_end

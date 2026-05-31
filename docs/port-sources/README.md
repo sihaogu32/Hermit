@@ -10,6 +10,8 @@
 |---|---|---|---|
 | `citation-guard/` | 4 層 hook 強制法條引用驗證（SOUL 事前／`transform_tool_result` 事中／`transform_llm_output` 事後／`on_session_end` audit） | **來源透明 guard**：研究型回答附引用、個人化回答標觸發來源、記憶引用可追溯。同一套 hook 架構，把「權威來源＝法規 KB」換成「答案依據＝web／個人資料源／memory id」 | §3.2、§8#2（紅線#2）、P2 |
 | `verify_citation/` | 被 citation-guard 包夾的核心驗證工具（法名／條號／內容比對） | 來源驗證工具：對個人資料源／web 來源做存在性與內容比對 | §8#2、P2 |
+
+> ✅ **已落地（2026-05-31）**：`citation-guard/` → `.hermes/plugins/source-guard/`、`verify_citation/` → `hermes-agent/tools/verify_source.py`（見 [`../roadmap.md`](../roadmap.md) §P2 進度）。法規 KB 內容比對改為「web 連結 grounding（本回合抓過才可引用）＋個人記憶內容比對」。此二參考可保留對照，亦可在確認 hermit 版穩定後移除。`legal-kb-admin/` 仍為 P1 connector／同意中心的對照參考。
 | `legal-kb-admin/` | dashboard plugin，machine-proposes / human-confirms：cron 寫 scan dump → 人工 dashboard 按鈕才 apply（唯一寫入入口走 `POST /scans/{id}/confirm`） | **connector + 權限同意中心**：任何「機器自己動了個人資料／對外執行」都要有人按；唯一寫入入口走 plugin | §4（critical path）、§8#5（紅線#5）、P1 |
 
 ## reference-docs/

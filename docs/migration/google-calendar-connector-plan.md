@@ -1,6 +1,6 @@
 # 行事曆系統實作計劃（P1 下一段）
 
-> 狀態：**規劃中、未動工**。
+> 狀態（2026-05-31 更新）：**步驟 1–3 已落地**（commit `3d0298f`：`calendar_store` / `calendar_read` / `consent_event` + `plugins/calendar` dashboard，Google read tool 降級為 source adapter，全帶測試）；**步驟 4 起未動工**（ICS 抓取／解析 `calendar_ics.py` 與 Dockerfile 的 `icalendar` 層、步驟 6 起的真網址端到端與 Google OAuth／cron）。下方〈落地步驟順序〉逐項對照。
 > **改版（2026-05-31）**：方向從原本「Google Calendar connector（GCP/OAuth-first）」轉為
 > **「hermit 原生行事曆 + dashboard，ICS 私人網址唯讀訂閱為主推匯入，既有 Google OAuth
 > connector 降級保留作進階選項」**。改版理由見下節〈為什麼改方向〉。
@@ -62,6 +62,8 @@
    && venv/bin/uv pip install --no-cache-dir icalendar
   ```
   依賴歸我們的 connector，不污染上游依賴清單，重建可重現。
+
+> **現況**：`icalendar` **尚未**加進 `docker/Dockerfile` 與 `ci/requirements-test.txt`（與 ICS slice 一同 deferred）。步驟 4 開工時要把「Dockerfile 疊層 + `ci/requirements-test.txt` pin + 版本鎖對齊」三處一起補（同 CLAUDE.md「升級 hermes 版本鎖」一節的三處同步紀律）。
 
 ## 紅線對齊
 
