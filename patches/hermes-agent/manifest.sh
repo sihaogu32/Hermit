@@ -9,7 +9,13 @@ HA_FILES=(
   "tools/consent_memory.py"
   "tools/consent_propose_tool.py"
   "tools/google_calendar.py"
+  "tools/calendar_store.py"
+  "tools/calendar_read.py"
+  "tools/consent_event.py"
   "tests/tools/test_google_calendar.py"
+  "tests/tools/test_calendar_store.py"
+  "tests/tools/test_calendar_read.py"
+  "tests/tools/test_consent_event.py"
 )
 
 HA_DIFFS=()

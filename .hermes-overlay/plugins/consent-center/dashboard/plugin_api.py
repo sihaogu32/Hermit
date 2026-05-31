@@ -25,7 +25,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from hermes_constants import get_hermes_home
-from tools import consent_memory
+from tools import consent_event, consent_memory
 
 router = APIRouter()
 
@@ -92,23 +92,35 @@ class ConfirmBody(BaseModel):
 
 @router.post("/proposals/{proposal_id}/confirm")
 async def confirm_proposal(proposal_id: str, body: ConfirmBody | None = None) -> dict[str, Any]:
-    """先檢查 staging 檔存在（不存在 404，且不呼叫 apply_proposal），
-    存在則同步呼叫 consent_memory.apply_proposal 寫入受管記憶。
+    """先檢查 staging 檔存在（不存在 404，且不呼叫任何 applier），
+    存在則依 proposal 的 ``applier`` 欄位分派到對應 applier 寫入。
+
+    分派（單一同意中心、單一確認 UI，但各 applier 落不同 store）：
+    - applier == "calendar_event" → consent_event.apply_event（寫 calendar/events.json）
+    - 其餘（含無 applier 欄位的舊 proposal） → consent_memory.apply_proposal（寫受管記憶）
 
     body 為空 → selected_item_ids=None → 全部套用。
-    成功回 apply_proposal 結果 dict；apply 失敗回 500 + traceback。
+    成功回 applier 結果 dict；apply 失敗回 500 + traceback。
     """
     try:
         _safe_filename(proposal_id)
-        # 紅線守門：staging 不存在則 404，且絕不觸發寫入路徑。
-        if not (_proposals_dir() / f"{proposal_id}.json").exists():
+        # 紅線守門：staging 不存在則 404，且絕不觸發任何寫入路徑。
+        proposal_path = _proposals_dir() / f"{proposal_id}.json"
+        if not proposal_path.exists():
             raise HTTPException(status_code=404, detail=f"proposal not found: {proposal_id}")
 
         b = body or ConfirmBody()
-        result = consent_memory.apply_proposal(
-            proposal_id,
-            selected_item_ids=b.selected_item_ids,
-        )
+        applier = json.loads(proposal_path.read_text(encoding="utf-8")).get("applier")
+        if applier == consent_event.APPLIER:
+            result = consent_event.apply_event(
+                proposal_id,
+                selected_item_ids=b.selected_item_ids,
+            )
+        else:
+            result = consent_memory.apply_proposal(
+                proposal_id,
+                selected_item_ids=b.selected_item_ids,
+            )
         return result
     except HTTPException:
         raise

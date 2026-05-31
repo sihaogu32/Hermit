@@ -1,0 +1,10 @@
+{
+  "name": "calendar",
+  "label": "行事曆",
+  "description": "原生行事曆合併視圖：手動增刪改事件 + ICS 訂閱管理（agent 提議走 consent-center 確認）",
+  "icon": "Calendar",
+  "version": "0.1.0",
+  "tab": { "path": "/calendar", "position": "end" },
+  "entry": "dist/index-0.1.0.js",
+  "api": "plugin_api.py"
+}

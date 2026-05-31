@@ -1,15 +1,17 @@
-"""Tests for the read-only Google Calendar connector tool.
+"""Tests for the read-only Google Calendar source adapter (tools/google_calendar.py).
 
 All tests mock credentials and the API client — they never hit the real Google
 API and never require a real token. The credential layer is exercised by
 patching the lazily-imported google libraries at their source module.
+
+The adapter no longer registers an agent tool (``calendar_read`` owns the merged
+``read_calendar_events``); it exposes ``fetch_events`` returning unified-schema
+events and returns ``[]`` when unauthorized so the merged read degrades quietly.
 """
 
 import json
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
-
-import pytest
 
 from tools import google_calendar as gc
 
@@ -61,40 +63,6 @@ _SAMPLE_ALLDAY = {
 }
 
 
-# ---------------------------------------------------------------------------
-# needs_auth path
-# ---------------------------------------------------------------------------
-
-
-def test_needs_auth_when_token_missing(monkeypatch, tmp_path):
-    """No token → needs_auth, and we never touch credentials or the API."""
-    monkeypatch.setattr(gc, "_token_path", lambda: tmp_path / "google_token.json")
-    no_creds = Mock(side_effect=AssertionError("must not load credentials"))
-    no_build = Mock(side_effect=AssertionError("must not build the API client"))
-    monkeypatch.setattr(gc, "_load_credentials", no_creds)
-    monkeypatch.setattr(gc, "_build_service", no_build)
-
-    result = gc.read_calendar_events()
-
-    assert result["status"] == "needs_auth"
-    assert "setup.py" in result["message"]
-    no_creds.assert_not_called()
-    no_build.assert_not_called()
-
-
-def test_token_exists_check_fn(monkeypatch, tmp_path):
-    token = tmp_path / "google_token.json"
-    monkeypatch.setattr(gc, "_token_path", lambda: token)
-    assert gc._token_exists() is False
-    token.write_text("{}", encoding="utf-8")
-    assert gc._token_exists() is True
-
-
-# ---------------------------------------------------------------------------
-# happy path: read + parse
-# ---------------------------------------------------------------------------
-
-
 def _arm_authorized(monkeypatch, tmp_path, items):
     """Make the token exist and inject a fake service returning ``items``."""
     token = tmp_path / "google_token.json"
@@ -106,59 +74,74 @@ def _arm_authorized(monkeypatch, tmp_path, items):
     return captured
 
 
-def test_reads_and_parses_events(monkeypatch, tmp_path):
+# ---------------------------------------------------------------------------
+# unauthorized path: empty, never touches credentials/API
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_returns_empty_when_token_missing(monkeypatch, tmp_path):
+    monkeypatch.setattr(gc, "_token_path", lambda: tmp_path / "google_token.json")
+    no_creds = Mock(side_effect=AssertionError("must not load credentials"))
+    no_build = Mock(side_effect=AssertionError("must not build the API client"))
+    monkeypatch.setattr(gc, "_load_credentials", no_creds)
+    monkeypatch.setattr(gc, "_build_service", no_build)
+
+    assert gc.fetch_events() == []
+    no_creds.assert_not_called()
+    no_build.assert_not_called()
+
+
+def test_token_exists_check(monkeypatch, tmp_path):
+    token = tmp_path / "google_token.json"
+    monkeypatch.setattr(gc, "_token_path", lambda: token)
+    assert gc._token_exists() is False
+    token.write_text("{}", encoding="utf-8")
+    assert gc._token_exists() is True
+
+
+# ---------------------------------------------------------------------------
+# happy path: fetch + parse into unified schema
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_parses_into_unified_schema(monkeypatch, tmp_path):
     captured = _arm_authorized(monkeypatch, tmp_path, [_SAMPLE_TIMED, _SAMPLE_ALLDAY])
 
-    result = gc.read_calendar_events(calendar_id="primary", days_ahead=7, max_results=10)
+    events = gc.fetch_events(calendar_id="primary", max_results=10)
+    assert len(events) == 2
 
-    assert result["status"] == "ok"
-    assert result["calendar_id"] == "primary"
-    assert result["event_count"] == 2
-
-    first = result["events"][0]
-    assert first["id"] == "evt-1"
-    assert first["summary"] == "Dentist appointment"
+    first = events[0]
+    assert first["id"] == "google:evt-1"
+    assert first["title"] == "Dentist appointment"        # summary -> title
     assert first["start"] == "2026-06-02T09:00:00+08:00"
     assert first["end"] == "2026-06-02T10:00:00+08:00"
     assert first["location"] == "Clinic A"
     assert first["description"] == "Routine checkup"
     assert first["status"] == "confirmed"
-    assert first["html_link"] == "https://calendar.google.com/evt-1"
+    assert first["source"] == "google"
+    assert first["source_ref"]["html_link"] == "https://calendar.google.com/evt-1"
+    assert first["source_ref"]["google_id"] == "evt-1"
     assert first["all_day"] is False
 
-    # All-day event: date-only start/end, all_day flag set.
-    second = result["events"][1]
+    second = events[1]
     assert second["start"] == "2026-06-05"
     assert second["all_day"] is True
 
-    # Read-only, deterministic ordering, single-event expansion.
     assert captured["calendarId"] == "primary"
     assert captured["maxResults"] == 10
     assert captured["singleEvents"] is True
     assert captured["orderBy"] == "startTime"
 
 
-def test_empty_calendar(monkeypatch, tmp_path):
+def test_fetch_empty_calendar(monkeypatch, tmp_path):
     _arm_authorized(monkeypatch, tmp_path, [])
-    result = gc.read_calendar_events()
-    assert result["status"] == "ok"
-    assert result["event_count"] == 0
-    assert result["events"] == []
+    assert gc.fetch_events() == []
 
 
 def test_missing_summary_defaults(monkeypatch, tmp_path):
     _arm_authorized(monkeypatch, tmp_path, [{"id": "x", "start": {}, "end": {}}])
-    result = gc.read_calendar_events()
-    assert result["events"][0]["summary"] == "(no title)"
-
-
-def test_handler_returns_json_string(monkeypatch, tmp_path):
-    _arm_authorized(monkeypatch, tmp_path, [_SAMPLE_TIMED])
-    out = gc.handler({"calendar_id": "primary", "days_ahead": 7, "max_results": 5})
-    assert isinstance(out, str)
-    parsed = json.loads(out)
-    assert parsed["status"] == "ok"
-    assert parsed["event_count"] == 1
+    events = gc.fetch_events()
+    assert events[0]["title"] == "(no title)"
 
 
 # ---------------------------------------------------------------------------
@@ -166,21 +149,29 @@ def test_handler_returns_json_string(monkeypatch, tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_days_ahead_window(monkeypatch, tmp_path):
+def test_default_window_uses_now(monkeypatch, tmp_path):
     captured = _arm_authorized(monkeypatch, tmp_path, [])
     fixed = datetime(2026, 5, 30, 12, 0, 0, tzinfo=timezone.utc)
     monkeypatch.setattr(gc, "_now", lambda: fixed)
 
-    gc.read_calendar_events(days_ahead=3)
+    gc.fetch_events()
 
     assert captured["timeMin"] == fixed.isoformat()
     t_min = datetime.fromisoformat(captured["timeMin"])
     t_max = datetime.fromisoformat(captured["timeMax"])
-    assert (t_max - t_min).days == 3
+    assert (t_max - t_min).days == 7
+
+
+def test_explicit_window_passed_through(monkeypatch, tmp_path):
+    captured = _arm_authorized(monkeypatch, tmp_path, [])
+    gc.fetch_events(time_min="2026-06-01T00:00:00+00:00",
+                    time_max="2026-06-30T00:00:00+00:00")
+    assert captured["timeMin"] == "2026-06-01T00:00:00+00:00"
+    assert captured["timeMax"] == "2026-06-30T00:00:00+00:00"
 
 
 # ---------------------------------------------------------------------------
-# credential refresh + write-back
+# credential refresh + write-back (unchanged behavior)
 # ---------------------------------------------------------------------------
 
 
@@ -215,7 +206,6 @@ def test_expired_token_refreshes_and_writes_back(monkeypatch, tmp_path):
 
     assert creds is fake
     assert fake.refreshed is True
-    # Refreshed token written back to disk.
     assert "REFRESHED" in token.read_text(encoding="utf-8")
 
 
@@ -243,16 +233,3 @@ def test_valid_token_not_rewritten(monkeypatch, tmp_path):
         gc._load_credentials()
 
     assert token.read_text(encoding="utf-8") == original
-
-
-# ---------------------------------------------------------------------------
-# registration
-# ---------------------------------------------------------------------------
-
-
-def test_registered_in_google_calendar_toolset():
-    entry = gc.registry.get_entry("read_calendar_events")
-    assert entry is not None
-    assert entry.toolset == "google-calendar"
-    # check_fn gates the tool on the token existing.
-    assert entry.check_fn is gc._token_exists

@@ -431,3 +431,66 @@ def test_registry_register_points(tmp_env):
 
     assert registry._module_registers_tools(consent_memory_path) is False
     assert registry._module_registers_tools(propose_tool_path) is True
+
+
+# ──────────────── 11. applier 分派：calendar_event → calendar_store ────────────────
+
+def _write_calendar_proposal(proposals_dir: Path, proposal_id: str) -> Path:
+    """構造一個 applier=calendar_event 的 staging proposal（含 1 個事件 item）。"""
+    payload = {
+        "schema_version": 1,
+        "proposal_id": proposal_id,
+        "created_at": "2026-05-31T09:00:00+00:00",
+        "status": "pending",
+        "applier": "calendar_event",
+        "source": "agent",
+        "source_ref": None,
+        "summary": {"item_count": 1, "targets": {"calendar": 1}},
+        "items": [
+            {
+                "id": "event-1",
+                "target": "calendar",
+                "title": "Dentist",
+                "start": "2026-06-02T09:00:00+08:00",
+                "end": "2026-06-02T10:00:00+08:00",
+                "content": "2026-06-02T09:00:00+08:00 Dentist",
+            }
+        ],
+    }
+    path = proposals_dir / f"{proposal_id}.json"
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
+def test_confirm_calendar_event_routes_to_calendar_store(
+    client, tmp_env, api_module, monkeypatch
+):
+    """applier=calendar_event 的 proposal confirm → 落 calendar/events.json
+    （非 CONFIRMED.md），且 memory applier 絕不被呼叫。"""
+
+    def must_not_call(*args, **kwargs):
+        raise AssertionError("memory applier must not be called for a calendar_event proposal")
+
+    monkeypatch.setattr(api_module.consent_memory, "apply_proposal", must_not_call)
+
+    path = _write_calendar_proposal(tmp_env["proposals_dir"], "20260531T090000Z-calendar")
+    r = client.post(
+        "/api/plugins/consent-center/proposals/20260531T090000Z-calendar/confirm",
+        json={},
+    )
+    assert r.status_code == 200
+    assert r.json()["count"] == 1
+
+    # 事件落 calendar/events.json（source=native），CONFIRMED.md 未被寫。
+    events_path = tmp_env["hermes_home"] / "calendar" / "events.json"
+    assert events_path.exists()
+    events = json.loads(events_path.read_text(encoding="utf-8"))["events"]
+    assert len(events) == 1
+    assert events[0]["title"] == "Dentist"
+    assert events[0]["source"] == "native"
+    assert not tmp_env["managed_path"].exists()
+
+    # audit 落 consent_history/，staging 被 unlink。
+    audits = list(tmp_env["history_dir"].glob("confirm_*.json"))
+    assert len(audits) == 1
+    assert not path.exists()

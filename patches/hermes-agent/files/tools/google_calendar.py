@@ -1,27 +1,26 @@
-"""Read-only Google Calendar connector tool for hermit (P1 critical path).
+"""Read-only Google Calendar *source adapter* for hermit's merged calendar.
 
-Exposes a single agent tool, ``read_calendar_events``, that reads upcoming
-events from the user's Google Calendar. It is *purely read-only*: it returns
-events and never writes anything — not to the calendar, not to personal memory.
+History: this module originally registered the ``read_calendar_events`` agent
+tool directly (commit a321d2f). It has since been demoted to one *source* behind
+the merged calendar read: ``calendar_read`` owns the single
+``read_calendar_events`` tool and pulls from the native store, ICS caches, and —
+when the user has authorized — this Google adapter. Google OAuth is no longer on
+the onboarding critical path; ICS subscriptions are the low-friction default.
 
-Division of responsibility (see docs/migration/google-calendar-connector-plan.md):
-  - This tool only READS events and returns them.
-  - Deciding which events are worth remembering, and staging them, is the
-    agent's job via the separate ``propose_memory`` tool (consent-center),
-    which routes through human confirmation before anything is persisted.
+This module therefore exposes ``fetch_events(...)`` (returning events already in
+the unified merged-view schema) and the credential helpers, and deliberately no
+longer calls ``registry.register(...)`` — so tool discovery does not surface it
+as a standalone tool. ``calendar_read`` imports it explicitly.
 
-RED LINE alignment:
-  - #3 (don't touch core): new tool under tools/, registered via the public
-    registry; no hermes-agent core module is modified.
-  - #5 (no silent writes to personal data): reading the calendar is low-risk
-    and may be exposed directly; the only writer into personal memory remains
-    the consent-center confirm path. Calendar *write* actions (create/delete
-    events) are deliberately NOT implemented in this first version.
+It remains *purely read-only*: it returns events and never writes anything — not
+to the calendar, not to personal memory. Calendar *write* actions (create/delete
+Google events) are deliberately NOT implemented (RED LINE #5). When the user has
+not authorized (no token), ``fetch_events`` returns ``[]`` so the merged read
+degrades gracefully instead of erroring.
 
 Credentials are self-contained here (≈ the pattern in the bundled
-google-workspace skill's ``google_api.get_credentials``) so this module does
-not import the skill scripts (which are CLIs, not importable modules). It reads
-the same ``HERMES_HOME/google_token.json`` produced by that skill's setup flow.
+google-workspace skill's ``google_api.get_credentials``); it reads the same
+``HERMES_HOME/google_token.json`` produced by that skill's setup flow.
 """
 
 from __future__ import annotations
@@ -30,7 +29,6 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from hermes_constants import get_hermes_home
-from tools.registry import registry
 
 # Fallback scope if the token file does not record its own scopes. Read-only is
 # the principled default for a read tool; in practice the stored scopes (which
@@ -44,7 +42,7 @@ def _token_path():
 
 
 def _token_exists() -> bool:
-    """``check_fn`` for the toolset: the tool is only usable once authorized."""
+    """Whether Google is authorized; the merged read includes this source only if True."""
     return _token_path().exists()
 
 
@@ -69,10 +67,10 @@ def _load_credentials():
     """Load credentials from the token file, refreshing + writing back if expired.
 
     Mirrors ``google_api.get_credentials`` but self-contained: it does not import
-    the bundled skill scripts. Imports the google libraries lazily so that tool
-    discovery never fails if they are absent — ``check_fn`` already gates the
-    tool on the token existing, and a missing library surfaces as a clear error
-    only when the tool is actually invoked.
+    the bundled skill scripts. Imports the google libraries lazily so that import
+    of this adapter never fails if they are absent — the token gate already
+    prevents fetches without authorization, and a missing library surfaces as a
+    clear error only when a fetch is actually attempted.
     """
     from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
@@ -94,50 +92,46 @@ def _build_service(creds):
     return build("calendar", "v3", credentials=creds)
 
 
-def _parse_event(raw: dict) -> dict:
-    """Project a raw Calendar API event into the fields we expose."""
+def _parse_event(raw: dict, calendar_id: str = "primary") -> dict:
+    """Project a raw Calendar API event into the unified merged-view schema."""
     start = raw.get("start", {})
     end = raw.get("end", {})
     return {
-        "id": raw.get("id", ""),
-        "summary": raw.get("summary", "(no title)"),
+        "id": f"google:{raw.get('id', '')}",
+        "title": raw.get("summary", "(no title)"),
         "start": start.get("dateTime", start.get("date", "")),
         "end": end.get("dateTime", end.get("date", "")),
         "all_day": "date" in start and "dateTime" not in start,
         "location": raw.get("location", ""),
         "description": raw.get("description", ""),
+        "source": "google",
+        "source_ref": {
+            "google_id": raw.get("id", ""),
+            "calendar_id": calendar_id,
+            "html_link": raw.get("htmlLink", ""),
+        },
         "status": raw.get("status", ""),
-        "html_link": raw.get("htmlLink", ""),
     }
 
 
-def read_calendar_events(
+def fetch_events(
+    time_min: str | None = None,
+    time_max: str | None = None,
     calendar_id: str = "primary",
-    days_ahead: int = 7,
-    max_results: int = 50,
-) -> dict:
-    """Read upcoming events from a Google Calendar (read-only).
+    max_results: int = 250,
+) -> list[dict]:
+    """Fetch upcoming Google Calendar events as unified-schema dicts (read-only).
 
-    Returns a dict. When the user has not authorized yet (no token), returns
-    ``{"status": "needs_auth", ...}`` *without* hitting the API, so the agent
-    can guide the user through the one-time setup instead of erroring.
+    Returns ``[]`` when the user has not authorized (no token) so the merged
+    calendar read can include this source opportunistically without erroring.
+    ``time_min``/``time_max`` are ISO-8601 bounds; defaults to now .. now+7d.
     """
     if not _token_exists():
-        return {
-            "status": "needs_auth",
-            "message": (
-                "Google Calendar is not authorized yet. Run the one-time setup "
-                "in the google-workspace skill: "
-                "~/.hermes/skills/productivity/google-workspace/scripts/setup.py "
-                "(see docs/migration/google-calendar-connector-plan.md). Once "
-                f"{_token_path()} exists, this tool becomes available."
-            ),
-        }
+        return []
 
     now = _now()
-    days = max(1, int(days_ahead))
-    time_min = now.isoformat()
-    time_max = (now + timedelta(days=days)).isoformat()
+    time_min = time_min or now.isoformat()
+    time_max = time_max or (now + timedelta(days=7)).isoformat()
 
     creds = _load_credentials()
     service = _build_service(creds)
@@ -154,65 +148,4 @@ def read_calendar_events(
         .execute()
     )
 
-    events = [_parse_event(e) for e in response.get("items", [])]
-    return {
-        "status": "ok",
-        "calendar_id": calendar_id,
-        "time_min": time_min,
-        "time_max": time_max,
-        "event_count": len(events),
-        "events": events,
-    }
-
-
-READ_CALENDAR_EVENTS_SCHEMA = {
-    "name": "read_calendar_events",
-    "description": (
-        "Read upcoming events from the user's Google Calendar (READ-ONLY; never "
-        "writes). Use this to learn the user's schedule. If you spot something "
-        "worth remembering long-term, do NOT persist it yourself — call "
-        "propose_memory so a human can confirm it via the consent-center."
-    ),
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "calendar_id": {
-                "type": "string",
-                "description": "Calendar to read (default 'primary').",
-            },
-            "days_ahead": {
-                "type": "integer",
-                "description": "How many days from now to look ahead (default 7).",
-            },
-            "max_results": {
-                "type": "integer",
-                "description": "Maximum number of events to return (default 50).",
-            },
-        },
-        "required": [],
-    },
-}
-
-
-handler = lambda args, **kw: json.dumps(
-    read_calendar_events(
-        calendar_id=args.get("calendar_id", "primary"),
-        days_ahead=args.get("days_ahead", 7),
-        max_results=args.get("max_results", 50),
-    ),
-    ensure_ascii=False,
-)
-
-
-registry.register(
-    name="read_calendar_events",
-    toolset="google-calendar",
-    schema=READ_CALENDAR_EVENTS_SCHEMA,
-    handler=handler,
-    check_fn=_token_exists,
-    description=(
-        "Read upcoming Google Calendar events (read-only). Available only once "
-        "the user has authorized via the google-workspace skill setup."
-    ),
-    emoji="\U0001f4c5",
-)
+    return [_parse_event(e, calendar_id) for e in response.get("items", [])]

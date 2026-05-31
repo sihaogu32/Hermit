@@ -19,4 +19,8 @@ HERMES_OVERLAY_PATHS=(
   "plugins/consent-center/dashboard/dist/index-0.1.0.js"
   "plugins/consent-center/tests/test_consent_center_api.py"
   "plugins/consent-center/tests/sample_proposal.json"
+  "plugins/calendar/dashboard/manifest.json"
+  "plugins/calendar/dashboard/plugin_api.py"
+  "plugins/calendar/dashboard/dist/index-0.1.0.js"
+  "plugins/calendar/tests/test_calendar_api.py"
 )
