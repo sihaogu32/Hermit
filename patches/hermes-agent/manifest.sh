@@ -16,6 +16,8 @@ HA_FILES=(
   "tests/tools/test_calendar_store.py"
   "tests/tools/test_calendar_read.py"
   "tests/tools/test_consent_event.py"
+  "tests/tools/test_consent_memory.py"
+  "tests/tools/test_consent_propose_tool.py"
 )
 
 HA_DIFFS=()
