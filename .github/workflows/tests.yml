@@ -21,9 +21,9 @@ jobs:
       HERMES_AGENT_REF: v2026.5.29
       HERMES_AGENT_SHA: e71a2bd11b733f3be7cf99deafde0066c343d462
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: pip
