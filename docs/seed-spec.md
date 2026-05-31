@@ -132,7 +132,7 @@ MVP 只需證明三件事：**(1) 它真的比通用聊天更懂我；(2) 它能
 |---|---|---|
 | 繁中與台灣語境優化 | 是 | 現成（SOUL.md 繁中 native，調 tone/日期/地名/語感） |
 | 對話核心 + 短長期記憶 | 是 | 現成（hermes memory + profile） |
-| 行事曆／提醒／待辦 | 是 | cron 現成；**connector（行事曆）需新工** |
+| 行事曆／提醒／待辦 | 是 | cron 現成；**原生行事曆免授權核心已實作**（原生 events.json + ICS 主推 + Google 降選配 adapter）；ICS 解析與 Google OAuth 端到端待補（見 [`docs/migration/google-calendar-connector-plan.md`](migration/google-calendar-connector-plan.md)） |
 | 雲端檔案／筆記摘要（1–2 個高價值來源） | 是 | **connector + 同意中心需新工**；摘要靠模型 |
 | 引用式研究回答 | 是 | **來源透明 guard 需移植**（citation-guard 改寫） |
 | 語音輸入 | 是 | gateway + STT，中等新工 |

@@ -13,7 +13,7 @@
 | Phase | 目標 | 關鍵交付 | 狀態 |
 |---|---|---|---|
 | **P0** | 專案落地 | 從 hermes_law 副本切出乾淨 hermit 骨架（清法務資產、停放 port-sources、重寫識別／設定／文件層、Docker 化、`git init`） | **已實作（2026-05-29，含 build/run 端到端驗證）** |
-| P1 | 資料與記憶治理（critical path） | **connector + 權限同意中心 plugin**（第一個資料源）、記憶可見／可編輯／可刪 | 進行中（consent-center 骨架已落地 2026-05-30；詳見下方「P1 進度」） |
+| P1 | 資料與記憶治理（critical path） | **connector + 權限同意中心 plugin**（第一個資料源）、記憶可見／可編輯／可刪 | 進行中（consent-center 骨架已落地 2026-05-30；原生行事曆免授權核心已實作 2026-05-31；詳見下方「P1 進度」） |
 | P2 | 對話與任務 | 繁中對話核心、提醒／排程、**來源透明 guard 移植**（citation-guard → source guard） | 未開工 |
 | P3 | 整合與語音 | 第 2–3 個 connector、檔案／筆記摘要、語音輸入、草稿 | 未開工 |
 | P4 | 商業化 | Freemium / Plus / Pro、B2B2C 綁定 | 未開工 |
@@ -35,7 +35,7 @@
 
 ## P1 進度（2026-05-30）
 
-第一刀 = 權限同意中心 plugin 骨架（落實紅線#5「個人資料不靜默自動動作」）：用 staging fixture 跑通 machine proposes → human confirms，真 Google Calendar connector 後接（proposal schema 已預留 source 欄、屆時不變）。
+第一刀 = 權限同意中心 plugin 骨架（落實紅線#5「個人資料不靜默自動動作」）：用 staging fixture 跑通 machine proposes → human confirms（proposal schema 已預留 source 欄）。第一個資料源已落地為**原生行事曆免授權核心**（2026-05-31，三源合併：原生 events.json 主 + ICS 主推 + Google 降選配唯讀 adapter；方向改版見 [`migration/google-calendar-connector-plan.md`](migration/google-calendar-connector-plan.md)）。
 
 | 項目 | 狀態 / 落地位置 |
 |---|---|
@@ -44,7 +44,7 @@
 | dev-only 提議工具（toolset `consent-dev` 預設關，只寫 staging） | 已實作 `hermes-agent/tools/consent_propose_tool.py`（feature 內唯一 register 點） |
 | pytest（含紅線守門 + 紅線回歸，17 passed） | 已實作 `.hermes/plugins/consent-center/tests/test_consent_center_api.py`；驗證 `cd ~/.hermes/hermes-agent && venv/bin/python -m pytest ~/.hermes/plugins/consent-center/tests/ -q -o 'addopts='` |
 | 鏡像白名單 + sync export | 已實作（`.hermes-overlay/manifest.sh`、`patches/hermes-agent/manifest.sh` 逐檔加；export 無 warn、secrets 掃描通過） |
-| 真 Google Calendar connector（OAuth + 讀取工具） | 未開工（取代 staging fixture；接點走 `propose_memory` → consent 流程不變） |
+| 原生行事曆免授權核心（三源合併視圖） | 已實作（commit 3d0298f）：`calendar_store.py`／`calendar_read.py`／`consent_event.py` + `plugins/calendar` dashboard（月/週/列表 + 手動增刪改）；Google 既有 read tool 改造成唯讀 source adapter（`google_calendar.py`）；agent 新增走 `propose_event` → consent。**下一段**：ICS 抓取/解析（需 icalendar，deferred stub 已備位）、Google OAuth 真實端到端驗證 |
 | 記憶可見／可編輯／可刪 | 未開工 |
 
 ## 開放決策（承接 seed-spec §10）
@@ -53,7 +53,7 @@
 |---|---|---|
 | 1 | 專案命名 + 新 repo | **已決：hermit** |
 | 2 | 部署模型：單人工具 / 多人 / SaaS | 待決；跑通單人 MVP 後評估 |
-| 3 | **第一個 connector**：行事曆 / 筆記 / 雲端檔 / 郵件 | **已決：Google Calendar**（行事曆；第一刀 consent 骨架先用 staging fixture，真 API 後接） |
+| 3 | **第一個 connector**：行事曆 / 筆記 / 雲端檔 / 郵件 | **已決：行事曆**（改版 2026-05-31：原生免授權核心為主、ICS 主推匯入、Google OAuth 降級保留作進階選項；見 [`migration/google-calendar-connector-plan.md`](migration/google-calendar-connector-plan.md)） |
 | 4 | 行動端：messaging gateway 起步 vs 原生 app | 待決；gateway 可快速驗證 |
 | 5 | 起始族群是否鎖 26–35 歲知識工作者 | 待決 |
 | 6 | 私有 Google Drive 需求文件納入 | 待決；納入後回頭修訂 seed-spec |
