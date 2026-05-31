@@ -313,6 +313,7 @@
   <a href="#mirrors"><span class="num">4</span>三個鏡像目錄與同步</a>
   <a href="#slots"><span class="num">5</span>擴充點 Extension Slots</a>
   <a href="#p1"><span class="num">6</span>P1：Connector + 同意中心</a>
+  <a href="#calendar"><span class="num">📅</span>原生行事曆與工具曝露</a>
   <a href="#port"><span class="num">7</span>移植來源參考</a>
   <a href="#roadmap"><span class="num">8</span>Roadmap P0–P5</a>
   <a href="#commands"><span class="num">9</span>常用驗證命令</a>
@@ -328,7 +329,8 @@
   <div class="badges">
     <span class="badge b-green"><span class="dot"></span>P0 專案落地 · 已實作</span>
     <span class="badge b-yellow"><span class="dot"></span>P1 資料與記憶治理 · 進行中</span>
-    <span class="badge b-date">產生日期 2026-05-30</span>
+    <span class="badge b-green"><span class="dot"></span>P1 原生行事曆 · 免授權核心已實作</span>
+    <span class="badge b-date">產生 2026-05-30 · 更新 2026-05-31</span>
   </div>
 </header>
 
@@ -981,9 +983,11 @@ flowchart TD
   <h3>Google Calendar connector（google_calendar.py 已落地 + 計畫 docs）</h3>
   <div class="card">
     <div class="tag-row">
-      <span class="mini-tag">計畫狀態：規劃中、未動工（2026-05-30）</span>
-      <span class="mini-tag">consent-center 骨架已於 commit 497fc95 落地</span>
+      <span class="mini-tag">已更新（2026-05-31）：見 <a href="#calendar">📅 原生行事曆系統</a></span>
+      <span class="mini-tag">google_calendar 已收編為 source adapter</span>
+      <span class="mini-tag">read_calendar_events 改為合併版（calendar toolset）</span>
     </div>
+    <p class="note">⚠ 下列為 <code>a321d2f</code> 初版（直連 Google、註冊於 google-calendar toolset 的 read 工具）紀錄；現況已轉為「原生為核心 + ICS 主推 + Google 降為選配 adapter」，且 <code>read_calendar_events</code> 已改為合併版註冊在 <code>calendar</code> toolset。最新架構與工具曝露通道見 <a href="#calendar">📅 原生行事曆系統</a>。</p>
     <ul>
       <li><code>read_calendar_events(calendar_id='primary', days_ahead=7, max_results=50)</code> 純讀 read-only，回 <code>{status:ok, calendar_id, time_min, time_max, event_count, events}</code>；事件欄位 <code>id/summary/start/end/all_day/location/description/status/html_link</code>。</li>
       <li>無 token 時回 <code>{status:needs_auth, message:...}</code> 不打 API，指引跑 google-workspace skill 的 <code>setup.py</code>。</li>
@@ -995,6 +999,110 @@ flowchart TD
       <li><b>待確認決策點</b>：讀與提議分離 vs 合一（建議分離）、toolset 是否預設啟用（建議啟用靠 check_fn 守 token）、讀取範圍（建議 primary、未來 7 天）、對外動作邊界（第一版只讀）。</li>
     </ul>
     <p class="note">fallback scope：<code>https://www.googleapis.com/auth/calendar.readonly</code>。<code>manifest.json</code>：name=consent-center、label=權限同意中心、version=0.1.0、icon=ShieldCheck、tab.path=/consent-center、entry=dist/index-0.1.0.js、api=plugin_api.py。</p>
+  </div>
+</section>
+
+<!-- ============ 📅 CALENDAR（原生行事曆 + 工具曝露通道） ============ -->
+<section id="calendar">
+  <h2>📅 · 原生行事曆系統：定義 → 通道 → 設定</h2>
+  <div class="lead">
+    P1 的第一個真資料源從「Google OAuth 直連」改為 <strong>hermit 原生行事曆為核心 + ICS 私人網址唯讀訂閱為主推 + Google 降為選配 adapter</strong>（理由：逼使用者去 GCP 建 OAuth client 會先把人擋在門外）。本節用圖表詳述一個「擴充功能」（這裡是 <code>calendar</code> toolset）<strong>從程式定義、經過哪些通道、最後真的被 agent 拿到</strong>，以及<strong>每一段可以在哪裡設定</strong>——這也是這次實作踩到、最容易忽略的一層。
+  </div>
+
+  <h3>① 一個工具怎麼「真的」到 agent 手上：曝露通道（最關鍵）</h3>
+  <p>把一個 toolset 寫好註冊，<strong>不代表 agent 就拿得到</strong>。它要走完「定義 → 探索 → 平台閘門」三關，每關都有對應的設定點。這次 calendar 寫好了卻沒生效，就是卡在最後一關。</p>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+    T1["① 定義（程式碼，紅線#3 走擴充點不動 core）<br/>tools/calendar_read.py 內<br/>registry.register(toolset='calendar')<br/>→ read_calendar_events、propose_event"]
+    T2["② 探索（process 啟動時一次）<br/>discover_builtin_tools() 掃 tools/*.py 進 registry<br/>⚠ 改了 tool 要重啟程序才更新"]
+    T3{"③ 這場對話走哪個 platform?<br/>dashboard / 本機 = cli"}
+    T4["④ 平台閘門（每場對話）<br/>_get_platform_tools(config,'cli')<br/>只認 platform_toolsets.cli<br/>（白名單；頂層 toolsets: 被忽略）"]
+    CFG["⚙ 設定點 config.yaml<br/>platform_toolsets.cli = hermes-cli, calendar"]
+    OUT["✅ agent 真的拿到<br/>read_calendar_events / propose_event"]
+    NEG["❌ calendar 不在白名單（預設只有 hermes-cli）<br/>agent 根本沒這工具<br/>→ 退去跑 google-workspace skill（撞 no token）"]
+    T1 --> T2 --> T3 --> T4
+    CFG -. 在這一關開門 .-> T4
+    T4 -->|"calendar 在白名單"| OUT
+    T4 -->|"沒列到"| NEG
+    style OUT fill:#cde8c8,stroke:#3a8a2a
+    style NEG fill:#f7d6d2,stroke:#c0392b
+    style CFG fill:#fdf3d3,stroke:#b8870b,stroke-width:2px
+    </pre>
+  </div>
+  <p class="caption">關鍵：工具曝露由「對話所在的 <span class="concept-term">platform</span>」對應的 <code>platform_toolsets.&lt;platform&gt;</code> 白名單決定，<strong>頂層 <code>toolsets:</code> 對 platform session 完全被忽略</strong>。dashboard／本機聊天走 <code>cli</code> 平台，所以要把 <code>calendar</code> 加進 <code>platform_toolsets.cli</code>，且改完要重啟程序（tool registry 在啟動時載入一次）。</p>
+
+  <div class="card" style="border-left:5px solid var(--orange)">
+    <h4 style="margin-top:0">⚠ 踩坑紀錄（2026-05-31）：為什麼「我現在有什麼行事曆」只會搜 Google</h4>
+    <p class="kv"><b>症狀</b>：dashboard 手動新增的事件正常存進 <code>events.json</code>，但問 agent 行事曆，它只去跑 google-workspace skill、撞 <code>No token at google_token.json</code>。</p>
+    <p class="kv"><b>根因</b>：落地時只把<strong>頂層 <code>toolsets:</code></strong> 設為 <code>calendar</code>，但 dashboard chat 走 <code>cli</code> 平台，工具曝露看的是 <code>platform_toolsets.cli</code>（當時只有 <code>hermes-cli</code>）→ 合併版 <code>read_calendar_events</code> 從未曝露給 agent，只好退去找 skill。</p>
+    <p class="kv"><b>修正</b>：把 <code>calendar</code> 加進 <code>platform_toolsets.cli</code> 並重啟 dashboard。完整解說見 <code>docs/key_note.md</code>。</p>
+  </div>
+
+  <h3>② 「可以在哪裡設定」一覽</h3>
+  <table>
+    <thead><tr><th>想做什麼</th><th>改哪裡（檔案 / 鍵）</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>讓某平台的 agent 用到 calendar 工具</td><td><code>config.yaml</code> → <code>platform_toolsets.&lt;平台&gt;</code>（dashboard/本機＝<code>cli</code>；對外 API＝<code>api_server</code>；<code>telegram</code>…）</td><td><span class="pill p-orange">最關鍵</span> 白名單，一扇門一份；頂層 <code>toolsets:</code> 對 platform session 無效</td></tr>
+      <tr><td>新增/改 deterministic 工具</td><td><code>hermes-agent/tools/calendar_*.py</code>（鏡像 <code>patches/hermes-agent/files/</code>，加進 <code>manifest.sh</code> 的 <code>HA_FILES</code>）</td><td>純 writer 模組不放 <code>registry.register</code>（紅線#5）</td></tr>
+      <tr><td>dashboard 頁面</td><td><code>.hermes/plugins/calendar/dashboard/{manifest.json,plugin_api.py,dist/index-0.1.0.js}</code>（overlay 白名單逐檔列）</td><td>放進 <code>plugins/</code> 即被掃到掛 <code>/api/plugins/calendar/</code></td></tr>
+      <tr><td>ICS 訂閱來源</td><td>dashboard「ICS 訂閱」面板貼私人 iCal 網址 → <code>calendar/subscriptions.json</code></td><td>解析在下一段（需 <code>icalendar</code>）</td></tr>
+      <tr><td>讓變更生效</td><td>重啟 hermes 程序</td><td>tool registry 啟動時載入一次；config 多為 per-session 重讀，但新 tool 要重啟才進 registry</td></tr>
+    </tbody>
+  </table>
+
+  <h3>③ 三源合併架構（原生為核心）</h3>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart LR
+    N["① 原生事件 events.json<br/>hermit 唯一會「寫」的檔<br/>calendar_store（唯一 writer）"]
+    I["② ICS 訂閱快取<br/>唯讀鏡像（下一段做）"]
+    G["③ Google adapter<br/>唯讀；token 在時才併入"]
+    R["read_calendar_events（合併視圖）<br/>依時間排序，每筆標 source<br/>外部源缺席/失敗優雅降級"]
+    DB["dashboard /calendar<br/>月 / 週 / 列表"]
+    N --> R
+    I --> R
+    G --> R
+    R --> DB
+    style N fill:#cde8c8,stroke:#3a8a2a
+    style I fill:#fdf3d3,stroke:#b8870b
+    </pre>
+  </div>
+  <p class="caption">責任線（紅線#5）：hermit 只「寫」原生 <code>events.json</code>；ICS／Google 都是<strong>唯讀鏡像</strong>，可重抓可丟。合併讀取永遠包含原生，外部源缺席時靜默略過、不讓整個讀取崩掉。</p>
+
+  <h3>④ 一筆行事曆事件「從哪裡定義、走哪條通道」進到 events.json</h3>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+    U["使用者：dashboard /calendar 手動新增/改/刪"]
+    A["agent：想幫你加一筆行程"]
+    U -->|"POST/PATCH/DELETE /events<br/>（本人操作＝即時人工確認）"| CS["calendar_store<br/>events.json 唯一 writer"]
+    A -->|"propose_event（只寫 staging，不碰行事曆）"| ST["consent_proposals/ staging<br/>applier=calendar_event"]
+    ST --> CC["consent-center confirm 端點<br/>（單一同意中心）"]
+    CC -->|"依 applier 分派"| AE["consent_event.apply_event"]
+    CC -. 非 calendar_event .-> MEM["consent_memory.apply_proposal<br/>（既有記憶 applier，向後相容）"]
+    AE --> CS
+    AE --> AU["consent_history/ audit"]
+    CS --> EV["events.json（source=native）"]
+    style CS fill:#cde8c8,stroke:#3a8a2a
+    style EV fill:#cde8c8,stroke:#3a8a2a
+    </pre>
+  </div>
+  <p class="caption">兩條通道都收斂到「唯一 writer」<code>calendar_store</code>：使用者手動編輯＝本人即時確認；agent 一律走 <code>propose_event → consent-center 確認</code>，不繞過。confirm 端點依 proposal 的 <code>applier</code> 欄位分派——<code>calendar_event</code> 走 <code>apply_event</code> 寫 <code>events.json</code>，其餘沿用既有 memory applier（同一個同意中心、向後相容）。</p>
+
+  <h3>⑤ 落地的檔與測試（免授權核心，commit 已落地）</h3>
+  <div class="card facts">
+    <ul>
+      <li><code>tools/calendar_store.py</code>：<code>events.json</code> 原子 CRUD，原生事件<strong>唯一 writer</strong>；無 <code>registry.register</code>（紅線#5）。</li>
+      <li><code>tools/calendar_read.py</code>：註冊合併版 <code>read_calendar_events</code> + <code>propose_event</code>（toolset <code>calendar</code>）；<code>merged_events(time_min,time_max,…)</code> 供 dashboard 任意視窗查詢。</li>
+      <li><code>tools/consent_event.py</code>：<code>propose_event</code> 只寫 staging（<code>applier=calendar_event</code>）、<code>apply_event</code> 寫 events.json + audit；無 <code>registry.register</code>，apply 僅 confirm 端點可達。</li>
+      <li><code>tools/google_calendar.py</code>：收編為 google source adapter（移除自註冊，導出 <code>fetch_events()</code> 回統一 schema；保留 credential 自動 refresh）。</li>
+      <li><code>plugins/calendar/dashboard/</code>：月/週/列表 + 手動增刪改 + ICS 訂閱管理（單檔 IIFE，比照 consent-center）。</li>
+      <li><code>consent-center/dashboard/plugin_api.py</code>：confirm 端點加 <code>applier</code> 分派。</li>
+      <li>事件統一 schema：<code>{ id, title, start, end, all_day, location, description, source: native|ics|google, source_ref, created_at, updated_at, status }</code>。</li>
+      <li>驗證：tool <strong>36</strong> + plugin <strong>27</strong> 測試全綠；<code>read_calendar_events</code>/<code>propose_event</code> 確認在 <code>calendar</code> toolset。</li>
+    </ul>
+    <p class="note">下一段（明確延後）：ICS 解析（<code>icalendar</code> + Docker 疊一層，連帶 <code>python-dateutil</code> 展開 <code>RRULE</code>）、Google OAuth 端到端、cron 每日讀本週行程提議。</p>
   </div>
 </section>
 
@@ -1195,7 +1303,9 @@ flowchart TD
       <li><span class="pill p-green">已實作</span> dev-only 提議工具（toolset consent-dev 預設關，只寫 staging）— <code>hermes-agent/tools/consent_propose_tool.py</code>。</li>
       <li><span class="pill p-green">已實作</span> pytest（含紅線守門 + 紅線回歸，<strong>17 passed</strong>）— <code>.hermes/plugins/consent-center/tests/test_consent_center_api.py</code>。</li>
       <li><span class="pill p-green">已實作</span> 鏡像白名單 + sync export（兩個 manifest.sh 逐檔加；export 無 warn、secrets 掃描通過）。</li>
-      <li><span class="pill p-gray">未開工</span> 真 Google Calendar connector（OAuth + 讀取工具）— 取代 staging fixture；接點走 propose_memory → consent 流程不變。</li>
+      <li><span class="pill p-green">已實作（2026-05-31）</span> 原生行事曆免授權核心：<code>calendar_store</code>（events.json 唯一 writer）、合併版 <code>read_calendar_events</code> + <code>propose_event</code>（calendar toolset）、confirm 端點 <code>applier</code> 分派、<code>google_calendar</code> 收編為 source adapter、<code>plugins/calendar</code> dashboard（月/週/列表 + 手動增刪改 + ICS 訂閱管理）；tool 36 + plugin 27 測試全綠。詳見 <a href="#calendar">📅 原生行事曆系統</a>。</li>
+      <li><span class="pill p-green">已修正（2026-05-31）</span> 工具曝露：<code>calendar</code> 加進 <code>platform_toolsets.cli</code>（dashboard chat 走 cli 平台；頂層 <code>toolsets:</code> 對 platform session 無效）。</li>
+      <li><span class="pill p-yellow">下一段</span> ICS 解析（<code>icalendar</code> + Docker 層）、Google OAuth 端到端、cron 每日摘要。</li>
       <li><span class="pill p-gray">未開工</span> 記憶可見／可編輯／可刪。</li>
     </ul>
   </div>
@@ -1263,8 +1373,9 @@ scripts/sync_overlays.sh audit</pre>
     <li><b>read:p1-consent</b> — P1 critical path：<code>.hermes/plugins/consent-center/</code>、<code>hermes-agent/tools/consent_memory.py</code> / <code>consent_propose_tool.py</code> / <code>google_calendar.py</code>、google-calendar-connector-plan.md。</li>
     <li><b>read:port-sources</b> — <code>docs/port-sources/</code>（citation-guard / legal-kb-admin / verify_citation）移植模式參考。</li>
     <li><b>read:roadmap</b> — <code>docs/roadmap.md</code>（P0–P5 分期、P0 落地、P1 進度、開放決策）、<code>wiki/log.md</code>、<code>.hermes-overlay/memories/MEMORY.md</code>、<code>.hermes-overlay/SOUL.md</code>。</li>
+    <li><b>read:calendar</b>（2026-05-31 更新）— <code>tools/calendar_store.py</code> / <code>calendar_read.py</code> / <code>consent_event.py</code> / <code>google_calendar.py</code>、<code>plugins/calendar/</code>、<code>hermes_cli/tools_config.py</code>（platform 工具曝露）、<code>docs/key_note.md</code>、<code>docs/migration/google-calendar-connector-plan.md</code>。</li>
   </ul>
-  <p class="note">產生日期 2026-05-30 · 狀態：P0 已實作 / P1 進行中 · 本文件忠實依抽取資料彙整，未新增資料外的功能或承諾。</p>
+  <p class="note">產生 2026-05-30 · 更新 2026-05-31（新增「📅 原生行事曆系統」並修正 P1 進度）· 狀態：P0 已實作 / P1 進行中（行事曆免授權核心已落地）· 本文件忠實依抽取資料彙整，未新增資料外的功能或承諾。</p>
 </footer>
 
 </main>
