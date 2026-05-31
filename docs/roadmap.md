@@ -35,7 +35,7 @@
 
 ## P1 進度（2026-05-30）
 
-第一刀 = 權限同意中心 plugin 骨架（落實紅線#5「個人資料不靜默自動動作」）：用 staging fixture 跑通 machine proposes → human confirms（proposal schema 已預留 source 欄）。第一個資料源已落地為**原生行事曆免授權核心**（2026-05-31，三源合併：原生 events.json 主 + ICS 主推 + Google 降選配唯讀 adapter；方向改版見 [`migration/google-calendar-connector-plan.md`](migration/google-calendar-connector-plan.md)）。
+第一刀 = 權限同意中心 plugin 骨架（落實紅線#5「個人資料不靜默自動動作」）：用 staging fixture 跑通 machine proposes → human confirms（proposal schema 已預留 source 欄）。第一個資料源已落地為**原生行事曆免授權核心**（2026-05-31，三源合併：原生 events.json 主 + ICS 主推 + Google 降選配唯讀 adapter；方向改版見 [`docs/migration/google-calendar-connector-plan.md`](docs/migration/google-calendar-connector-plan.md)）。
 
 | 項目 | 狀態 / 落地位置 |
 |---|---|
@@ -53,7 +53,7 @@
 |---|---|---|
 | 1 | 專案命名 + 新 repo | **已決：hermit** |
 | 2 | 部署模型：單人工具 / 多人 / SaaS | 待決；跑通單人 MVP 後評估 |
-| 3 | **第一個 connector**：行事曆 / 筆記 / 雲端檔 / 郵件 | **已決：行事曆**（改版 2026-05-31：原生免授權核心為主、ICS 主推匯入、Google OAuth 降級保留作進階選項；見 [`migration/google-calendar-connector-plan.md`](migration/google-calendar-connector-plan.md)） |
+| 3 | **第一個 connector**：行事曆 / 筆記 / 雲端檔 / 郵件 | **已決：行事曆**（改版 2026-05-31：原生免授權核心為主、ICS 主推匯入、Google OAuth 降級保留作進階選項；見 [`docs/migration/google-calendar-connector-plan.md`](docs/migration/google-calendar-connector-plan.md)） |
 | 4 | 行動端：messaging gateway 起步 vs 原生 app | 待決；gateway 可快速驗證 |
 | 5 | 起始族群是否鎖 26–35 歲知識工作者 | 待決 |
 | 6 | 私有 Google Drive 需求文件納入 | 待決；納入後回頭修訂 seed-spec |

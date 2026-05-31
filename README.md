@@ -4,7 +4,7 @@
 
 與法務專案 hermes_law 平行、各自獨立 repo，共用同一個 hermes-agent 上游底座與已驗證的架構模式，但不共用 running instance、不搬法務資產。完整願景、市場前提、設計紅線、roadmap 見 [`docs/seed-spec.md`](docs/seed-spec.md)。
 
-> **狀態（2026-05-28）**：P0「專案落地」進行中——已從 hermes_law 副本切出乾淨骨架（清掉法務資產、保留可重用底座），執行環境走 Docker。下一步 P1 = connector + 權限同意中心（critical path）。
+> **狀態（2026-05-31）**：P1「資料與記憶治理」進行中。P0「專案落地」已完成（從 hermes_law 副本切出乾淨骨架、清掉法務資產、Docker 化、版本鎖 `v2026.5.29`、build/run 端到端驗證）。P1（critical path）的權限同意中心 plugin、Google 唯讀 connector、原生行事曆三源合併核心皆已落地並帶測試（CI gate 已接）；尚待「記憶可見/可編輯/可刪」UI 與 ICS 解析。分期進度以 [`docs/roadmap.md`](docs/roadmap.md) 為權威 single source。
 
 ## 目錄結構
 

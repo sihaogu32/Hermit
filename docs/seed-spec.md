@@ -132,7 +132,7 @@ MVP 只需證明三件事：**(1) 它真的比通用聊天更懂我；(2) 它能
 |---|---|---|
 | 繁中與台灣語境優化 | 是 | 現成（SOUL.md 繁中 native，調 tone/日期/地名/語感） |
 | 對話核心 + 短長期記憶 | 是 | 現成（hermes memory + profile） |
-| 行事曆／提醒／待辦 | 是 | cron 現成；**原生行事曆免授權核心已實作**（原生 events.json + ICS 主推 + Google 降選配 adapter）；ICS 解析與 Google OAuth 端到端待補（見 [`docs/migration/google-calendar-connector-plan.md`](migration/google-calendar-connector-plan.md)） |
+| 行事曆／提醒／待辦 | 是 | cron 現成；**原生行事曆免授權核心已實作**（原生 events.json + ICS 主推 + Google 降選配 adapter）；ICS 解析與 Google OAuth 端到端待補（見 [`docs/migration/google-calendar-connector-plan.md`](docs/migration/google-calendar-connector-plan.md)） |
 | 雲端檔案／筆記摘要（1–2 個高價值來源） | 是 | **connector + 同意中心需新工**；摘要靠模型 |
 | 引用式研究回答 | 是 | **來源透明 guard 需移植**（citation-guard 改寫） |
 | 語音輸入 | 是 | gateway + STT，中等新工 |
@@ -147,14 +147,16 @@ MVP 只需證明三件事：**(1) 它真的比通用聊天更懂我；(2) 它能
 
 報告原則：**先做資料與記憶治理 → 再對話與任務 → 再語音與整合 → 再代理工作流**（避免先做炫目自動化卻無權限/審計/記憶治理）。
 
-| Phase | 目標 | 關鍵交付 | 狀態 |
-|---|---|---|---|
-| P0 | 專案落地 | 新 repo、per-project HERMES_HOME 安裝、overlay/patches 備份 | 未開工 |
-| P1 | 資料與記憶治理 | **connector + 同意中心 plugin**（第一個資料源）、記憶可見/可編輯/可刪 | 未開工（critical path） |
-| P2 | 對話與任務 | 繁中對話核心、提醒/排程、來源透明 guard 移植 | 未開工 |
-| P3 | 整合與語音 | 第 2–3 個 connector、檔案/筆記摘要、語音輸入、草稿 | 未開工 |
-| P4 | 商業化 | Freemium / Plus / Pro 上線、B2B2C 綁定 | 未開工 |
-| P5（後置） | hybrid / 離線 / 原生 app / 代理工作流 | on-device 路由、裝置端能力 | 待 pain point |
+下表只記**分期意圖**（目標範圍與關鍵交付）；**各分期的實際進度／狀態一律以 [`roadmap.md`](roadmap.md) 為權威 single source**，本節刻意不再維護狀態欄，避免兩份會各自漂移的狀態表。（截至 2026-05-31：P0 已完成、P1 進行中、P2 起未開工；快照詳見 roadmap。）
+
+| Phase | 目標 | 關鍵交付 |
+|---|---|---|
+| P0 | 專案落地 | 新 repo、per-project HERMES_HOME 安裝、overlay/patches 備份 |
+| P1（critical path） | 資料與記憶治理 | **connector + 同意中心 plugin**（第一個資料源）、記憶可見/可編輯/可刪 |
+| P2 | 對話與任務 | 繁中對話核心、提醒/排程、來源透明 guard 移植 |
+| P3 | 整合與語音 | 第 2–3 個 connector、檔案/筆記摘要、語音輸入、草稿 |
+| P4 | 商業化 | Freemium / Plus / Pro 上線、B2B2C 綁定 |
+| P5（後置） | hybrid / 離線 / 原生 app / 代理工作流 | on-device 路由、裝置端能力 |
 
 人力/時程（報告估算，非承諾）：6–9 人核心團隊；輕量（成熟第三方模型 + 聚焦）12–16 週可測試 MVP，深做（自建 on-device + 多資料源 + 安全審計）4–6 個月。
 
