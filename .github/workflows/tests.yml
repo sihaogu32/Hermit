@@ -20,9 +20,6 @@ jobs:
       # 與 docker/Dockerfile 的版本鎖一致；SHA 為防 tag 被移動的二次保險。
       HERMES_AGENT_REF: v2026.5.29
       HERMES_AGENT_SHA: e71a2bd11b733f3be7cf99deafde0066c343d462
-      HERMES_HOME: ${{ github.workspace }}/.ci-hermes-home
-      # sync import 會把 repo 的 wiki/ 推到此處（拋棄式，避免污染 $HOME/wiki）。
-      HERMES_WIKI_DIR: ${{ runner.temp }}/wiki-throwaway
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +28,13 @@ jobs:
           python-version: '3.11'
           cache: pip
           cache-dependency-path: ci/requirements-test.txt
+
+      - name: Set up runner paths
+        # 用 shell 變數（非 ${{ runner.* }} context——後者在 job-level env 不可用）。
+        # 都放 $RUNNER_TEMP（checkout 之外），HERMES_WIKI_DIR 為拋棄式避免污染。
+        run: |
+          echo "HERMES_HOME=$RUNNER_TEMP/hermes-home" >> "$GITHUB_ENV"
+          echo "HERMES_WIKI_DIR=$RUNNER_TEMP/wiki-throwaway" >> "$GITHUB_ENV"
 
       - name: Clone pinned hermes-agent core (no heavy install)
         run: |
