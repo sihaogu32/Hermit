@@ -1,0 +1,52 @@
+name: tests
+
+# 改 tool / plugin 後的自動 gate：跑 hermit 自製擴充的單元 + 整合測試（目前 76 個）。
+# 策略：clone「鎖定版」hermes-agent core（不裝 .[all] 195 套件）→ 用專案自己的
+# sync_overlays.sh import 組裝出 runtime layout → 裝最小 pin 版依賴 → scripts/run_tests.sh。
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    env:
+      # 與 docker/Dockerfile 的版本鎖一致；SHA 為防 tag 被移動的二次保險。
+      HERMES_AGENT_REF: v2026.5.29
+      HERMES_AGENT_SHA: e71a2bd11b733f3be7cf99deafde0066c343d462
+      HERMES_HOME: ${{ github.workspace }}/.ci-hermes-home
+      # sync import 會把 repo 的 wiki/ 推到此處（拋棄式，避免污染 $HOME/wiki）。
+      HERMES_WIKI_DIR: ${{ runner.temp }}/wiki-throwaway
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: ci/requirements-test.txt
+
+      - name: Clone pinned hermes-agent core (no heavy install)
+        run: |
+          git clone --depth 1 --branch "$HERMES_AGENT_REF" \
+            https://github.com/NousResearch/hermes-agent.git "$HERMES_HOME/hermes-agent"
+          got="$(git -C "$HERMES_HOME/hermes-agent" rev-parse HEAD)"
+          if [ "$got" != "$HERMES_AGENT_SHA" ]; then
+            echo "::error::hermes-agent HEAD $got != 鎖定 SHA $HERMES_AGENT_SHA（tag 被移動？）"
+            exit 1
+          fi
+
+      - name: Assemble HERMES_HOME from repo mirrors
+        run: bash scripts/sync_overlays.sh import
+
+      - name: Install minimal test deps
+        run: pip install -r ci/requirements-test.txt
+
+      - name: Run hermit extension tests (76)
+        run: PYTEST_PYTHON="$(command -v python)" bash scripts/run_tests.sh -q

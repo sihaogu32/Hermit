@@ -1,0 +1,17 @@
+# hermit 擴充測試的「最小」依賴
+#
+# 為什麼不直接裝 hermes 的 .[all]（~195 套件）：
+#   自製 tools 與 plugin 只依賴上游兩個 stdlib-only 的 core 模組
+#   （tools.registry、hermes_constants），以及下列第三方套件。
+#   測試把 Google API 與憑證全 mock，故只需 google-auth 系列能 import（refresh 路徑會觸到）。
+#
+# 版本對齊「鎖定版」hermes-agent v2026.5.29（SHA e71a2bd1）runtime venv 實裝版本，
+#   確保 CI 與本機 runtime 行為一致、可重現。升級 hermes 版本鎖時一併校這份。
+pytest==9.0.2
+fastapi==0.133.1
+pydantic==2.13.4
+starlette==0.52.1
+httpx==0.28.1
+google-auth==2.49.2
+google-auth-oauthlib==1.3.1
+google-api-python-client==2.194.0

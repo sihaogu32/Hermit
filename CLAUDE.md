@@ -68,6 +68,18 @@ docker run --rm -it -e OPENAI_API_KEY=... hermit cli
 
 加 / 改 hermes tool 後要重啟或 reset 現行 hermes session，schema 才會被重新探索。
 
+## 跑測試（自製擴充的 gate）
+
+改完 tool / plugin 後跑 `scripts/run_tests.sh`——它從 manifest 衍生「自製測試清單」（tool 層 + plugin 層），從 runtime layout 執行：
+
+```bash
+# 本機（用真實 runtime ~/.hermes 與其 venv；不需 Docker）
+scripts/run_tests.sh                                   # 跑全部自製測試
+scripts/run_tests.sh -q -k calendar                    # 多餘參數原樣轉給 pytest
+```
+
+CI（`.github/workflows/tests.yml`）對每次 push / PR 自動跑同一套：clone 鎖定版 hermes-agent core（不裝 `.[all]` 195 套件）→ `sync_overlays.sh import` 組裝 → 裝 `ci/requirements-test.txt` 的最小 pin 版依賴 → 跑 `scripts/run_tests.sh`。新增 tool/plugin 測試只要照「擴充點」一節加進對應 manifest，CI 與本地 runner 都會自動納入；升級 hermes 版本鎖時，記得同步校 `ci/requirements-test.txt` 與 workflow 內的 `HERMES_AGENT_REF/SHA`。
+
 ## 文件導引
 
 | 想了解 | 看這份 |
