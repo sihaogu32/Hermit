@@ -4,6 +4,8 @@
 # 原則：overlay 是「我的擴充（delta vs stock hermes）」的選擇性鏡像，**不鏡像上游 stock 資產**。
 # 因此 skill / plugin 要逐一列出我自己加的，不要用 `skills/*`、`plugins/*` blanket glob
 # ——blanket glob 會把上游 ~90 個 bundled skill 全掃進來（違反原則、且會踩到 stock skill 內的 secret placeholder）。
+# 註：runtime plugins/ 也會出現上游 bundled plugin（如 hermes-achievements，是 session 掃描的狀態快取、含對話派生個資），
+#     同理刻意不鏡像；勿用 plugins/* blanket glob，否則會把這份個資快取一起掃進 repo。
 # 路徑支援 shell glob，但僅用於精準匹配單一擴充（rsync 時展開）。
 HERMES_OVERLAY_PATHS=(
   "SOUL.md"

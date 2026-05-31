@@ -24,6 +24,9 @@ FROM nikolaik/python-nodejs:python3.11-nodejs20
 #   查已安裝版本：git -C ~/.hermes/hermes-agent rev-parse HEAD
 ARG HERMES_AGENT_REPO=https://github.com/NousResearch/hermes-agent.git
 ARG HERMES_AGENT_REF=v2026.5.29
+# SHA 為防 tag 被上游移動的二次保險（與 .github/workflows/tests.yml 的 HERMES_AGENT_SHA 同值）。
+# ⚠ 升級版本鎖時三處要一起改：CI workflow（REF/SHA）/ 本檔（REF/SHA）/ ci/requirements-test.txt。
+ARG HERMES_AGENT_SHA=e71a2bd11b733f3be7cf99deafde0066c343d462
 
 ENV HERMES_HOME=/root/.hermes \
     PATH="/root/.local/bin:${PATH}" \
@@ -36,8 +39,14 @@ RUN apt-get update \
  && pip install --no-cache-dir uv
 
 # ── ① base：鎖定版本的 hermes，巢狀安裝在 $HERMES_HOME/hermes-agent ──────────
+# checkout 後比對實際 HEAD == 鎖定 SHA（對齊 CI），不符即硬失敗，避免 tag 被移動時靜默吃到不同 commit。
 RUN git clone "${HERMES_AGENT_REPO}" "${HERMES_HOME}/hermes-agent" \
  && git -C "${HERMES_HOME}/hermes-agent" checkout "${HERMES_AGENT_REF}" \
+ && got="$(git -C "${HERMES_HOME}/hermes-agent" rev-parse HEAD)" \
+ && if [ "${got}" != "${HERMES_AGENT_SHA}" ]; then \
+        echo "ERROR: hermes-agent HEAD ${got} != 鎖定 SHA ${HERMES_AGENT_SHA}（tag 被移動？）" >&2; \
+        exit 1; \
+    fi \
  && git -C "${HERMES_HOME}/hermes-agent" rev-parse HEAD > "${HERMES_HOME}/.hermes-agent-pinned-sha"
 # setup-hermes.sh：建 venv + uv pip install -e ".[all]"(195 套件) + 同步 74 bundled skills
 RUN cd "${HERMES_HOME}/hermes-agent" \
